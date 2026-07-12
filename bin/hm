@@ -3,10 +3,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.5.0"
+VERSION="0.6.0"
 
 BAR_P99_MS=300
 BAR_QUERY_MS=100
+BAR_PAGE_MS=50
 BAR_MAX_DEPS=40
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -102,15 +103,16 @@ cmd_eval() {
   echo ""
   echo "  id  auto  note"
 
-  # All N* B* need evidence on form (human-owned napkin + most build)
+  # Human-owned: napkin, most build, ship (B3–B5 auto below)
   local id
+  local human_ids=(N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B6 B7 S1 S2 S3 S4 S5 S6 S7 S8)
   if [[ -z "$cl" ]]; then
-    for id in N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B6 B7; do
+    for id in "${human_ids[@]}"; do
       row "$id" FAIL "no eval form"
       fail=$((fail + 1))
     done
   else
-    for id in N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B6 B7; do
+    for id in "${human_ids[@]}"; do
       if ! row_has_evidence "$dir/$cl" "$id"; then
         row "$id" FAIL "no evidence"
         fail=$((fail + 1))
@@ -125,11 +127,17 @@ cmd_eval() {
       elif [[ "$id" == "N6" && -n "$ms" && "$ms" -gt "$BAR_QUERY_MS" ]]; then
         row N6 FAIL "evidence ${ms}ms > ${BAR_QUERY_MS}ms"
         fail=$((fail + 1))
+      elif [[ "$id" == "S1" && -n "$ms" && "$ms" -gt "$BAR_PAGE_MS" ]]; then
+        row S1 FAIL "evidence ${ms}ms > ${BAR_PAGE_MS}ms"
+        fail=$((fail + 1))
       elif [[ "$id" == "N2" && -n "$ms" ]]; then
         row N2 PASS "p99 ${ms}ms ≤ ${BAR_P99_MS}ms"
         pass=$((pass + 1))
       elif [[ "$id" == "N6" && -n "$ms" ]]; then
         row N6 PASS "query ${ms}ms ≤ ${BAR_QUERY_MS}ms"
+        pass=$((pass + 1))
+      elif [[ "$id" == "S1" && -n "$ms" ]]; then
+        row S1 PASS "page ${ms}ms ≤ ${BAR_PAGE_MS}ms"
         pass=$((pass + 1))
       else
         row "$id" HUMAN "evidence present — confirm vs STANDARDS.md"
@@ -235,6 +243,6 @@ case "$cmd" in
   eval) cmd_eval "${1:-.}" ;;
   help|-h|--help) usage ;;
   version|-v|--version) echo "hm $VERSION" ;;
-  bars) echo "see STANDARDS.md (p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms deps≤${BAR_MAX_DEPS})" ;;
+  bars) echo "see STANDARDS.md (p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms page≤${BAR_PAGE_MS}ms deps≤${BAR_MAX_DEPS})" ;;
   *) usage; die "unknown: $cmd" ;;
 esac
