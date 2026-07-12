@@ -1,76 +1,73 @@
 # Standards
 
 Fixed bars. **Eval** scores a project against these. Miss any → **Fail**.  
-Agents: how to meet without gaming → [MEET.md](./MEET.md).
+Every bar needs a **number, count, or binary** in evidence. Vague prose alone = fail.  
+Agents: [MEET.md](./MEET.md).
 
 ## Perf
 
-| # | Standard |
-|---|----------|
-| **P1** | Critical pages load **≤ 50 ms** under a named repeatable check (number in evidence) |
-| **P2** | Every **product** API (user-facing product surface) **p99 ≤ 300 ms** (number + scope in evidence) |
-| **P3** | Key query **≤ 100 ms** |
-| **P4** | Main-path JS **≤ 200 KiB** gzip (or named exception) |
+| # | Metric | Pass if |
+|---|--------|---------|
+| **P1** | Product page load (named URLs + script) | each **≤ 50 ms**; list every product URL |
+| **P2** | Product API latency (named routes) | each **p99 ≤ 300 ms**; list every product route |
+| **P3** | Product queries (named) | each **≤ 100 ms**; list every product query |
+| **P4** | Main-path JS gzip (named entry) | **≤ 200 KiB** (or exception + measured size) |
 
 ## Coverage / QA
 
-| # | Standard |
-|---|----------|
-| **Q1** | Critical paths tested; full suite green; flaky list empty or budgeted |
+| # | Metric | Pass if |
+|---|--------|---------|
+| **Q1** | Test suite | exit **0**; **3**/3 consecutive full runs green; **0** unbudgeted flakes; every product flow in inventory has **≥1** test |
 
 ## Tool scores
 
-| # | Standard |
-|---|----------|
-| **T1** | Main product page(s): **Lighthouse Performance = 100** (named URL + run); **N/A** if no web UI |
-| **T2** | Every production React app: **React Doctor 100/100** (fresh verbose run); **N/A** if no React |
-| **T3** | Docs + README: **0** broken links (**lychee** / linkinator or equiv.) |
+| # | Metric | Pass if |
+|---|--------|---------|
+| **T1** | Lighthouse Performance (named URL) | score **= 100**; **N/A** if no web UI |
+| **T2** | React Doctor (each prod React app) | score **= 100/100**; **N/A** if no React |
+| **T3** | Link check (docs + README) | broken links **= 0** |
 
 ## Docs / onboarding
 
-| # | Standard |
-|---|----------|
-| **D1** | Docs match implementation; fresh clone → ready from **README only** (one clean pass) |
+| # | Metric | Pass if |
+|---|--------|---------|
+| **D1** | Fresh clone from README only | ready in **1** attempt; README commands exit **0**; undocumented steps **= 0** |
 
 ## Correctness
 
-| # | Standard |
-|---|----------|
-| **C1** | Domain-first schema (business names) |
-| **C2** | One path each: auth, data access, errors — **user-safe + diagnosable** |
-| **C3** | `strict: true`; no boundary `any` / cast-through-unknown |
-| **C4** | Customer-facing claims match product **or** no external claims |
+| # | Metric | Pass if |
+|---|--------|---------|
+| **C1** | Domain glossary → schema | **≥1** business entity listed; each maps **1:1** to a primary table/type (table in evidence) |
+| **C2** | Auth / data / errors | auth entrypoints **= 1**; data-access style **= 1**; user-visible 5xx samples with stack/provider leak **= 0** |
+| **C3** | TypeScript strict + `any` | `"strict": true`; boundary `any` / cast-through-unknown hits **= 0** |
+| **C4** | Customer claims | claim inventory size **N**; mismatches **= 0** (or **N = 0** if no external claims) |
 
 ## Repo hygiene
 
-| # | Standard |
-|---|----------|
-| **R1** | Zero secrets in git; no tracked `.env` |
-| **R2** | Prod+dev deps **≤ 40** (or each extra justified) |
-| **R3** | One-line why per non-trivial dependency |
-| **R4** | CHANGELOG (or release notes) current for user-visible changes **or** pre-users |
+| # | Metric | Pass if |
+|---|--------|---------|
+| **R1** | Secrets in git | secret-shaped hits **= 0**; tracked `.env` **= 0** |
+| **R2** | Dependency count | prod+dev deps **≤ 40** (or each extra has a one-line justify) |
+| **R3** | Dep justifications | `# whys = # non-trivial deps` (every one has a one-liner) |
+| **R4** | Changelog lag | user-visible releases since last note **= 0** (or pre-users) |
 
 ## Ops
 
-| # | Standard |
-|---|----------|
-| **O1** | Peak **and** steady load written (number + unit each) |
-| **O2** | Data now + monthly growth (units) |
-| **O3** | Failure mode: one sentence (primary dies → …) |
-| **O4** | Cost itemized in **$/mo**: ceiling, CPU/mem, storage, egress, third-party |
-| **O5** | Assumptions listed, **≤ 6** |
-| **O6** | If durable user data: restore proved once in a clean room **or** N/A |
+| # | Metric | Pass if |
+|---|--------|---------|
+| **O1** | Load | peak **and** steady: each has number + unit |
+| **O2** | Data | now **and** monthly growth: each has number + unit |
+| **O3** | Failure mode | exactly **1** sentence: primary dies → … |
+| **O4** | Cost **$/mo** | **5** numbers: ceiling, CPU/mem, storage, egress, third-party |
+| **O5** | Assumptions | count **1–6** |
+| **O6** | Restore | **1** clean-room success (date + scenario) **or** N/A (no durable user data) |
 
 ## Why the numbers
 
-- **50 ms page** — user-facing load bar  
-- **300 ms p99** — interactive API bar  
-- **100 ms query** — keeps the API budget honest  
-- **200 KiB gzip** — main-path perceived perf  
-- **Lighthouse Perf 100** — fixed web scoreboard  
-- **React Doctor 100** — fixed React scoreboard  
+- **50 ms / 300 ms / 100 ms / 200 KiB** — perf budgets  
+- **Lighthouse 100 / Doctor 100 / 0 dead links** — fixed tools  
+- **3 green runs** — flakes can’t hide in one lucky pass  
 - **≤6 assumptions** — more → restart the plan  
-- Cost: order-of-magnitude USD OK; blank not OK  
+- **5 cost lines** — blank line = fail  
 
-Estimates: [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math).  
-Domains shaped like [Loop Library](https://signals.forwardfuture.com/loop-library/) themes.
+Estimates: [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math).
