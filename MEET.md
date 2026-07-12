@@ -23,7 +23,7 @@ Evidence = **number, count, or binary**. Story-only answers fail.
 | | Honest move |
 |--|--|
 | **SPEED** | Measure every listed product URL/route/query; prefetch before quality cuts |
-| **TEST** | Fix flakes; map inventory → tests; 3 full greens |
+| **TEST** | Fix flakes; list user-facing flows → map each to tests; 3 full greens |
 | **SCORE** | Re-run full tool; fix root cause; **`hm links`** for SCORE3 |
 | **DOCS** | README alone boots a stranger once |
 | **CODE** | 1:1 glossary; one auth/data path; 0 user-facing leaks |

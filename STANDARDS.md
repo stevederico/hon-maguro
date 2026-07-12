@@ -18,7 +18,7 @@ Agents: [MEET.md](./MEET.md).
 
 | # | Metric | Pass if |
 |---|--------|---------|
-| **TEST1** | Test suite | exit **0**; **3**/3 consecutive full runs green; **0** unbudgeted flakes; every product flow in inventory has **≥1** test |
+| **TEST1** | Test suite | exit **0**; **3**/3 consecutive full runs green; **0** unbudgeted flakes; every user-facing flow (list them in evidence) has **≥1** test |
 
 ## Tool scores
 
