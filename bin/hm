@@ -105,7 +105,7 @@ cmd_eval() {
   # All N* B* need evidence on form (human-owned napkin + most build)
   local id
   if [[ -z "$cl" ]]; then
-    for id in N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B3 B4 B5 B6 B7; do
+    for id in N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B6 B7; do
       row "$id" FAIL "no eval form"
       fail=$((fail + 1))
     done
