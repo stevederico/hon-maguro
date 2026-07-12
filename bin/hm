@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.6.1"
+VERSION="0.6.2"
 
 BAR_P99_MS=300
 BAR_QUERY_MS=100
@@ -103,7 +103,7 @@ cmd_eval() {
   echo ""
   echo "  id  auto  note"
 
-  # Human-owned: napkin, most build, ship (B3–B5 auto below)
+  # Human-owned: core + ship (B3–B5 auto below)
   local id
   local human_ids=(N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B6 B7 S1 S2 S3 S4 S5 S6 S7 S8)
   if [[ -z "$cl" ]]; then

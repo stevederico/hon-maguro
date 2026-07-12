@@ -3,7 +3,9 @@
 Fixed bars. **Eval** scores a project against these. Miss any → **Fail**.  
 Agents: how to meet without gaming → [MEET.md](./MEET.md).
 
-## Napkin
+## Core
+
+Capacity, cost, and codebase bars (was napkin + build).
 
 | # | Standard |
 |---|----------|
@@ -16,11 +18,6 @@ Agents: how to meet without gaming → [MEET.md](./MEET.md).
 | **N7** | Main-path JS **≤ 200 KiB** gzip (or named exception) |
 | **N8** | Budgets checked by **CI or named script** |
 | **N9** | Assumptions listed, **≤ 6** |
-
-## Build
-
-| # | Standard |
-|---|----------|
 | **B1** | Domain-first schema (business names) |
 | **B2** | One path each: auth, data access, errors |
 | **B3** | `strict: true`; no boundary `any` / cast-through-unknown |
@@ -31,7 +28,7 @@ Agents: how to meet without gaming → [MEET.md](./MEET.md).
 
 ## Ship
 
-Loop-shaped bars: permanent product state, not the process that got there.
+Permanent product state for users (not the process that got there).
 
 | # | Standard |
 |---|----------|
