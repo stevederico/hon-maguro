@@ -5,6 +5,7 @@
 | | |
 |--|--|
 | **Standards** | Fixed bars → [STANDARDS.md](./STANDARDS.md) |
+| **Meet** | Agent tips (no gaming) → [MEET.md](./MEET.md) |
 | **Eval** | Score a project → [EVAL.md](./EVAL.md) · `hm eval` |
 
 Meet every standard → **Hon Maguro**. Miss any → **Fail**.

@@ -1,6 +1,7 @@
 # Standards
 
-Fixed bars. **Eval** scores a project against these. Miss any → **Fail**.
+Fixed bars. **Eval** scores a project against these. Miss any → **Fail**.  
+Agents: how to meet without gaming → [MEET.md](./MEET.md).
 
 ## Napkin
 
