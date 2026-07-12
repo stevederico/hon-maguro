@@ -47,9 +47,8 @@ Agents: [MEET.md](./MEET.md).
 | # | Metric | Pass if |
 |---|--------|---------|
 | **REPO1** | Secrets in git | secret-shaped hits **= 0**; tracked `.env` **= 0** |
-| **REPO2** | Dependency count | prod+dev deps **≤ 20** (or each extra has a one-line justify) |
-| **REPO3** | Dep justifications | `# whys = # non-trivial deps` (every one has a one-liner) |
-| **REPO4** | Changelog lag | user-visible releases since last note **= 0** (or pre-users) |
+| **REPO2** | Deps: count + justify | prod+dev deps **≤ 20**; every dep past 20 (or non-trivial) has a one-line why |
+| **REPO3** | Changelog lag | user-visible releases since last note **= 0** (or pre-users) |
 
 ## Ops
 

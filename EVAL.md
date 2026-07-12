@@ -25,7 +25,6 @@ Bars: [STANDARDS.md](./STANDARDS.md). Empty evidence = fail.
 | REPO1 | ☐ | |
 | REPO2 | ☐ | |
 | REPO3 | ☐ | |
-| REPO4 | ☐ | |
 | OPS1 | ☐ | |
 | OPS2 | ☐ | |
 | OPS3 | ☐ | |

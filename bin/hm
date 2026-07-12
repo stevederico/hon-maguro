@@ -165,7 +165,7 @@ cmd_eval() {
 
   # Human-owned (CODE3, REPO1, REPO2, SCORE3 auto below)
   local id
-  local human_ids=(SPEED1 SPEED2 SPEED3 SPEED4 SPEED5 TEST1 SCORE1 SCORE2 DOCS1 CODE1 CODE2 REPO3 REPO4 OPS1 OPS2 OPS3 OPS4 OPS5 OPS6)
+  local human_ids=(SPEED1 SPEED2 SPEED3 SPEED4 SPEED5 TEST1 SCORE1 SCORE2 DOCS1 CODE1 CODE2 REPO3 OPS1 OPS2 OPS3 OPS4 OPS5 OPS6)
   if [[ -z "$cl" ]]; then
     for id in "${human_ids[@]}"; do
       row "$id" FAIL "no eval form"
