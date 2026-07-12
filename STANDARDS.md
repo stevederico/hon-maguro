@@ -8,7 +8,7 @@ Agents: how to meet without gaming → [MEET.md](./MEET.md).
 | # | Standard |
 |---|----------|
 | **P1** | Critical pages load **≤ 50 ms** under a named repeatable check (number in evidence) |
-| **P2** | Critical path / API **p99 ≤ 300 ms** (number in evidence) |
+| **P2** | Every **product** API (user-facing product surface) **p99 ≤ 300 ms** (number + scope in evidence) |
 | **P3** | Key query **≤ 100 ms** |
 | **P4** | Main-path JS **≤ 200 KiB** gzip (or named exception) |
 
