@@ -3,11 +3,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.5.0"
+VERSION="0.13.0"
 
 BAR_P99_MS=300
 BAR_QUERY_MS=100
-BAR_MAX_DEPS=40
+BAR_TTFB_MS=50
+BAR_MAX_DEPS=20
 
 die() { echo "error: $*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -17,7 +18,8 @@ usage() {
 hm v$VERSION — Hon Maguro eval
 
   hm init [path]   Drop HON-MAGURO-EVAL.md
-  hm eval [path]   Eval against standards (auto: strict, secrets, deps)
+  hm links [path]  Check markdown links (SCORE3; curl only — no install)
+  hm eval [path]   Eval against standards (auto: strict, secrets, deps, links)
   hm help
 EOF
 }
@@ -67,7 +69,7 @@ row_has_evidence() {
   [[ -n "$ev" && "$ev" != "☐" ]]
 }
 
-row() { printf '  %-3s %-5s %s\n' "$1" "$2" "$3"; }
+row() { printf '  %-7s %-5s %s\n' "$1" "$2" "$3"; }
 
 cmd_init() {
   local dir="${1:-.}"
@@ -88,6 +90,65 @@ cmd_init() {
   echo "fill evidence, then: hm eval $dir"
 }
 
+# Extract ](target) from markdown; print "file<TAB>target"
+md_link_pairs() {
+  local dir="$1" f target
+  while IFS= read -r -d '' f; do
+    grep -oE '\]\([^)]+\)' "$f" 2>/dev/null | sed 's/^](//;s/)$//' | while IFS= read -r target; do
+      [[ -z "$target" || "$target" == \#* || "$target" == mailto:* ]] && continue
+      printf '%s\t%s\n' "$f" "$target"
+    done
+  done < <(find "$dir" \( -path '*/.git/*' -o -path '*/node_modules/*' -o -path '*/dist/*' \) -prune \
+    -o -name '*.md' -print0 2>/dev/null)
+}
+
+# Returns broken count on stdout; lists broken on stderr. 0 = pass.
+check_links() {
+  local dir="$1"
+  local broken=0 total=0 code path base target file
+  have curl || die "curl required for hm links (preinstalled on macOS/Linux)"
+
+  while IFS=$'\t' read -r file target; do
+    [[ -z "${target:-}" ]] && continue
+    total=$((total + 1))
+    if [[ "$target" =~ ^https?:// ]]; then
+      code="$(curl -sS -o /dev/null -w '%{http_code}' -L --max-time 12 \
+        -A 'hm-links/0.11' "$target" 2>/dev/null || echo 000)"
+      if [[ ! "$code" =~ ^[23][0-9][0-9]$ ]]; then
+        echo "BROKEN  $code  $target  ($file)" >&2
+        broken=$((broken + 1))
+      fi
+    else
+      # strip query/hash for local paths
+      path="${target%%[?#]*}"
+      [[ -z "$path" ]] && continue
+      base="$(dirname "$file")"
+      if [[ -e "$base/$path" || -e "$dir/$path" ]]; then
+        :
+      else
+        echo "BROKEN  missing  $target  ($file)" >&2
+        broken=$((broken + 1))
+      fi
+    fi
+  done < <(md_link_pairs "$dir" | sort -u)
+
+  echo "links checked=$total broken=$broken" >&2
+  echo "$broken"
+}
+
+cmd_links() {
+  local dir="${1:-.}"
+  dir="$(cd "$dir" && pwd)"
+  local broken
+  broken="$(check_links "$dir")"
+  if [[ "$broken" -eq 0 ]]; then
+    echo "SCORE3 PASS  broken=0"
+    return 0
+  fi
+  echo "SCORE3 FAIL  broken=$broken"
+  return 1
+}
+
 cmd_eval() {
   local dir="${1:-.}"
   dir="$(cd "$dir" && pwd)"
@@ -100,17 +161,18 @@ cmd_eval() {
   echo "path:    $dir"
   [[ -n "$cl" ]] && echo "eval:    $cl" || echo "eval:    missing — hm init"
   echo ""
-  echo "  id  auto  note"
+  echo "  id      auto  note"
 
-  # All N* B* need evidence on form (human-owned napkin + most build)
+  # Human-owned (CODE3, REPO1, REPO2, SCORE3 auto below)
   local id
+  local human_ids=(SPEED1 SPEED2 SPEED3 SPEED4 SPEED5 TEST1 SCORE1 SCORE2 DOCS1 CODE1 CODE2 REPO3 OPS1 OPS2 OPS3 OPS4 OPS5 OPS6)
   if [[ -z "$cl" ]]; then
-    for id in N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B6 B7; do
+    for id in "${human_ids[@]}"; do
       row "$id" FAIL "no eval form"
       fail=$((fail + 1))
     done
   else
-    for id in N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B6 B7; do
+    for id in "${human_ids[@]}"; do
       if ! row_has_evidence "$dir/$cl" "$id"; then
         row "$id" FAIL "no evidence"
         fail=$((fail + 1))
@@ -119,17 +181,23 @@ cmd_eval() {
       local line ms
       line="$(grep -E "^\| ${id} " "$dir/$cl" | head -1)"
       ms="$(echo "$line" | grep -oE '[0-9]+[[:space:]]*ms' | head -1 | grep -oE '[0-9]+' || true)"
-      if [[ "$id" == "N2" && -n "$ms" && "$ms" -gt "$BAR_P99_MS" ]]; then
-        row N2 FAIL "evidence ${ms}ms > ${BAR_P99_MS}ms"
+      if [[ "$id" == "SPEED3" && -n "$ms" && "$ms" -gt "$BAR_P99_MS" ]]; then
+        row SPEED3 FAIL "evidence ${ms}ms > ${BAR_P99_MS}ms"
         fail=$((fail + 1))
-      elif [[ "$id" == "N6" && -n "$ms" && "$ms" -gt "$BAR_QUERY_MS" ]]; then
-        row N6 FAIL "evidence ${ms}ms > ${BAR_QUERY_MS}ms"
+      elif [[ "$id" == "SPEED4" && -n "$ms" && "$ms" -gt "$BAR_QUERY_MS" ]]; then
+        row SPEED4 FAIL "evidence ${ms}ms > ${BAR_QUERY_MS}ms"
         fail=$((fail + 1))
-      elif [[ "$id" == "N2" && -n "$ms" ]]; then
-        row N2 PASS "p99 ${ms}ms ≤ ${BAR_P99_MS}ms"
+      elif [[ "$id" == "SPEED1" && -n "$ms" && "$ms" -gt "$BAR_TTFB_MS" ]]; then
+        row SPEED1 FAIL "evidence ${ms}ms > ${BAR_TTFB_MS}ms"
+        fail=$((fail + 1))
+      elif [[ "$id" == "SPEED3" && -n "$ms" ]]; then
+        row SPEED3 PASS "p99 ${ms}ms ≤ ${BAR_P99_MS}ms"
         pass=$((pass + 1))
-      elif [[ "$id" == "N6" && -n "$ms" ]]; then
-        row N6 PASS "query ${ms}ms ≤ ${BAR_QUERY_MS}ms"
+      elif [[ "$id" == "SPEED4" && -n "$ms" ]]; then
+        row SPEED4 PASS "query ${ms}ms ≤ ${BAR_QUERY_MS}ms"
+        pass=$((pass + 1))
+      elif [[ "$id" == "SPEED1" && -n "$ms" ]]; then
+        row SPEED1 PASS "TTFB ${ms}ms ≤ ${BAR_TTFB_MS}ms"
         pass=$((pass + 1))
       else
         row "$id" HUMAN "evidence present — confirm vs STANDARDS.md"
@@ -138,32 +206,44 @@ cmd_eval() {
     done
   fi
 
-  # B3 auto: strict + any
+  # SCORE3 auto: markdown links (hm links)
+  local link_broken
+  link_broken="$(check_links "$dir" 2>/dev/null || echo 1)"
+  link_broken="$(as_int "$link_broken")"
+  if [[ "$link_broken" -eq 0 ]]; then
+    row SCORE3 PASS "hm links broken=0"
+    pass=$((pass + 1))
+  else
+    row SCORE3 FAIL "hm links broken=$link_broken — run: hm links $dir"
+    fail=$((fail + 1))
+  fi
+
+  # CODE3 auto: strict + any
   local tsconfig any_count
   tsconfig="$(find_first "$dir" tsconfig.json backend/tsconfig.json frontend/tsconfig.json || true)"
   any_count="$(rg_count 'as any|: any\b|as unknown as' "$dir" --glob '*.ts' --glob '*.tsx')"
   if [[ -n "$tsconfig" ]] && grep -qE '"strict"\s*:\s*true' "$dir/$tsconfig" 2>/dev/null; then
     if [[ "$any_count" -gt 0 ]]; then
-      row B3 FAIL "strict on but ~$any_count any/cast hits"
+      row CODE3 FAIL "strict on but ~$any_count any/cast hits"
       fail=$((fail + 1))
     else
-      row B3 PASS "strict: true, no any hits"
+      row CODE3 PASS "strict: true, no any hits"
       pass=$((pass + 1))
     fi
   elif [[ -n "$tsconfig" ]]; then
-    row B3 FAIL "strict not true"
+    row CODE3 FAIL "strict not true"
     fail=$((fail + 1))
   else
-    if [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" B3; then
-      row B3 HUMAN "no tsconfig — evidence only"
+    if [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" CODE3; then
+      row CODE3 HUMAN "no tsconfig — evidence only"
       human=$((human + 1))
     else
-      row B3 FAIL "no tsconfig / no evidence"
+      row CODE3 FAIL "no tsconfig / no evidence"
       fail=$((fail + 1))
     fi
   fi
 
-  # B4 auto: secrets
+  # REPO1 auto: secrets
   local secret_hits env_tracked=0
   secret_hits="$(rg_count '(api[_-]?key|secret[_-]?key|sk_live|sk_test|ghp_[A-Za-z0-9]{20,})' "$dir" \
     --glob '!.env*' --glob '!*.example' --glob '!*.md')"
@@ -171,36 +251,36 @@ cmd_eval() {
     git -C "$dir" ls-files | grep -qE '(^|/)\.env$' && env_tracked=1 || true
   fi
   if [[ "$env_tracked" -eq 1 ]]; then
-    row B4 FAIL ".env tracked"
+    row REPO1 FAIL ".env tracked"
     fail=$((fail + 1))
   elif [[ "$secret_hits" -gt 0 ]]; then
-    row B4 FAIL "~$secret_hits secret-shaped hits"
+    row REPO1 FAIL "~$secret_hits secret-shaped hits"
     fail=$((fail + 1))
   else
-    row B4 PASS "no tracked .env / no obvious secrets"
+    row REPO1 PASS "no tracked .env / no obvious secrets"
     pass=$((pass + 1))
   fi
 
-  # B5 auto: deps
+  # REPO2 auto: deps
   local dep_count=0
   if [[ -f "$dir/package.json" ]] && have python3; then
     dep_count="$(as_int "$(python3 -c "import json;p=json.load(open('$dir/package.json'));print(len(p.get('dependencies')or{})+len(p.get('devDependencies')or{}))")")"
     if [[ "$dep_count" -le "$BAR_MAX_DEPS" ]]; then
-      row B5 PASS "$dep_count deps ≤ $BAR_MAX_DEPS"
+      row REPO2 PASS "$dep_count deps ≤ $BAR_MAX_DEPS"
       pass=$((pass + 1))
-    elif [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" B5; then
-      row B5 HUMAN "$dep_count deps — justify extras in evidence"
+    elif [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" REPO2; then
+      row REPO2 HUMAN "$dep_count deps — justify extras in evidence"
       human=$((human + 1))
     else
-      row B5 FAIL "$dep_count deps > $BAR_MAX_DEPS"
+      row REPO2 FAIL "$dep_count deps > $BAR_MAX_DEPS"
       fail=$((fail + 1))
     fi
   else
-    if [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" B5; then
-      row B5 HUMAN "no package.json — evidence only"
+    if [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" REPO2; then
+      row REPO2 HUMAN "no package.json — evidence only"
       human=$((human + 1))
     else
-      row B5 FAIL "no package.json / no evidence"
+      row REPO2 FAIL "no package.json / no evidence"
       fail=$((fail + 1))
     fi
   fi
@@ -232,9 +312,10 @@ cmd="${1:-help}"
 shift || true
 case "$cmd" in
   init) cmd_init "${1:-.}" ;;
+  links) cmd_links "${1:-.}" ;;
   eval) cmd_eval "${1:-.}" ;;
   help|-h|--help) usage ;;
   version|-v|--version) echo "hm $VERSION" ;;
-  bars) echo "see STANDARDS.md (p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms deps≤${BAR_MAX_DEPS})" ;;
+  bars) echo "see STANDARDS.md (TTFB≤${BAR_TTFB_MS}ms p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms deps≤${BAR_MAX_DEPS})" ;;
   *) usage; die "unknown: $cmd" ;;
 esac

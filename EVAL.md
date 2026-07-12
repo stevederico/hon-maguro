@@ -9,19 +9,25 @@ Bars: [STANDARDS.md](./STANDARDS.md). Empty evidence = fail.
 
 | # | Pass? | Evidence |
 |---|-------|----------|
-| N1 | ☐ | |
-| N2 | ☐ | |
-| N3 | ☐ | |
-| N4 | ☐ | |
-| N5 | ☐ | |
-| N6 | ☐ | |
-| N7 | ☐ | |
-| N8 | ☐ | |
-| N9 | ☐ | |
-| B1 | ☐ | |
-| B2 | ☐ | |
-| B3 | ☐ | |
-| B4 | ☐ | |
-| B5 | ☐ | |
-| B6 | ☐ | |
-| B7 | ☐ | |
+| SPEED1 | ☐ | |
+| SPEED2 | ☐ | |
+| SPEED3 | ☐ | |
+| SPEED4 | ☐ | |
+| SPEED5 | ☐ | |
+| TEST1 | ☐ | |
+| SCORE1 | ☐ | |
+| SCORE2 | ☐ | |
+| SCORE3 | ☐ | |
+| DOCS1 | ☐ | |
+| CODE1 | ☐ | |
+| CODE2 | ☐ | |
+| CODE3 | ☐ | |
+| REPO1 | ☐ | |
+| REPO2 | ☐ | |
+| REPO3 | ☐ | |
+| OPS1 | ☐ | |
+| OPS2 | ☐ | |
+| OPS3 | ☐ | |
+| OPS4 | ☐ | |
+| OPS5 | ☐ | |
+| OPS6 | ☐ | |
