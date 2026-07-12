@@ -60,10 +60,31 @@ Most software is export grade. That is fine for experiments. Do not call it Hon 
 
 ## How to use
 
-1. Open [CHECKLIST.md](./CHECKLIST.md) for a repo under review.
-2. Mark each standard pass/fail with evidence (file path, napkin calc, benchmark).
-3. Fail any row → not Hon Maguro. Fix the row or regrade honestly.
-4. Link the filled checklist from the project's README when you claim the grade.
+### Tool (`bin/hm`)
+
+Zero deps. Bash. Auto checks are **signals** — HUMAN rows still need a person.
+
+```bash
+# from this repo
+./bin/hm init ~/path/to/project   # checklist + docs/napkin.md
+./bin/hm grade ~/path/to/project  # scan → verdict + HON-MAGURO-REPORT.md
+```
+
+Optional: `ln -s "$(pwd)/bin/hm" /usr/local/bin/hm`
+
+| Command | Does |
+|---------|------|
+| `hm init [path]` | Writes `HON-MAGURO-CHECKLIST.md` + `docs/napkin.md` |
+| `hm grade [path]` | Auto PASS/FAIL/HUMAN per standard; honest verdict |
+
+`grade` can auto-**fail** (missing napkin, tracked `.env`, `strict` off, etc.). It never auto-awards **Hon Maguro** — only `PENDING HUMAN` when autos are clean.
+
+### Manual
+
+1. Open [CHECKLIST.md](./CHECKLIST.md) (or the file `hm init` dropped).
+2. Mark each standard pass/fail with evidence.
+3. Fail any row → not Hon Maguro.
+4. Link the filled checklist when you claim the grade.
 
 ---
 
