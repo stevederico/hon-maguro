@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Hon Maguro grader — hardcoded bars. Pass all or Fail.
-# Usage: hm <init|grade|help> [path]
+# Hon Maguro — eval projects against standards. Pass all or Fail.
+# Usage: hm <init|eval|bars|help> [path]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.3.0"
+VERSION="0.4.0"
 
 # --- hardcoded bars (must match STANDARDS.md) ---
 BAR_P99_MS=300
@@ -18,14 +18,14 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 usage() {
   cat <<EOF
-hm — Hon Maguro scorecard (hardcoded bars)
+hm — Hon Maguro standards + eval
 
-  hm init [path]    Drop HON-MAGURO-CHECKLIST.md
-  hm grade [path]   Auto-scan against fixed bars
-  hm bars           Print hardcoded thresholds
+  hm init [path]   Drop HON-MAGURO-EVAL.md (eval form)
+  hm eval [path]   Eval project against STANDARDS.md bars
+  hm bars          Print numeric standards
   hm help
 
-Bars (v$VERSION):
+Standards (v$VERSION):
   p99 ≤ ${BAR_P99_MS}ms · query ≤ ${BAR_QUERY_MS}ms · JS ≤ ${BAR_BUNDLE_KIB}KiB gzip
   assumptions ≤ ${BAR_MAX_ASSUMPTIONS} · deps ≤ ${BAR_MAX_DEPS}
   All pass → Hon Maguro. Else → Fail.
@@ -63,9 +63,9 @@ find_first() {
   return 1
 }
 
-find_checklist() {
+find_eval form() {
   local dir="$1" f
-  for f in HON-MAGURO-CHECKLIST.md docs/HON-MAGURO-CHECKLIST.md; do
+  for f in HON-MAGURO-EVAL.md docs/HON-MAGURO-EVAL.md; do
     [[ -f "$dir/$f" ]] && { echo "$f"; return 0; }
   done
   return 1
@@ -125,36 +125,36 @@ cmd_init() {
   date="$(date +%Y-%m-%d)"
   project="$(basename "$dir")"
 
-  if [[ ! -f "$dir/HON-MAGURO-CHECKLIST.md" ]]; then
+  if [[ ! -f "$dir/HON-MAGURO-EVAL.md" ]]; then
     sed -e "s/^\*\*Project:\*\*.*/**Project:** $project/" \
         -e "s/^\*\*Date:\*\*.*/**Date:** $date/" \
-        "$ROOT/CHECKLIST.md" >"$dir/HON-MAGURO-CHECKLIST.md"
-    echo "wrote $dir/HON-MAGURO-CHECKLIST.md"
+        "$ROOT/EVAL.md" >"$dir/HON-MAGURO-EVAL.md"
+    echo "wrote $dir/HON-MAGURO-EVAL.md"
   else
-    echo "skip (exists): HON-MAGURO-CHECKLIST.md"
+    echo "skip (exists): HON-MAGURO-EVAL.md"
   fi
-  echo "bars are fixed — fill evidence only, then: hm grade $dir"
+  echo "bars are fixed — fill evidence only, then: hm eval $dir"
 }
 
-cmd_grade() {
+cmd_eval() {
   local dir="${1:-.}"
   dir="$(cd "$dir" && pwd)"
   local project cl=""
   project="$(basename "$dir")"
-  cl="$(find_checklist "$dir" || true)"
+  cl="$(find_eval form "$dir" || true)"
 
   local auto_fail=0 human=0 auto_pass=0
 
-  echo "Hon Maguro grade v$VERSION (hardcoded bars)"
+  echo "Hon Maguro eval v$VERSION (hardcoded bars)"
   echo "project: $project"
   echo "path:    $dir"
   echo "bars:    p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms js≤${BAR_BUNDLE_KIB}KiB deps≤${BAR_MAX_DEPS}"
-  [[ -n "$cl" ]] && echo "card:    $cl" || echo "card:    missing (hm init)"
+  [[ -n "$cl" ]] && echo "eval:    $cl" || echo "eval:    missing (hm init)"
   echo ""
   echo "  id   auto  standard"
   echo "  ---- ----- --------"
 
-  # Napkin rows: require evidence on checklist; numeric bars need numbers in evidence
+  # Napkin rows: require evidence on eval form; numeric bars need numbers in evidence
   local n label
   for n in N1 N2 N3 N4 N5 N6 N7 N8 N9 N10 N11 N12 N13 N14 N15; do
     case "$n" in
@@ -176,7 +176,7 @@ cmd_grade() {
     esac
 
     if [[ -z "$cl" ]]; then
-      row "$n" FAIL "$label" "no checklist"
+      row "$n" FAIL "$label" "no eval form"
       auto_fail=$((auto_fail + 1))
       continue
     fi
@@ -357,22 +357,22 @@ PY
   echo "verdict: $verdict"
 
   {
-    echo "# Hon Maguro report — $project"
+    echo "# Hon Maguro eval — $project"
     echo ""
     echo "- **Date:** $(date +%Y-%m-%d)"
     echo "- **Tool:** hm $VERSION"
-    echo "- **Bars:** p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms js≤${BAR_BUNDLE_KIB}KiB deps≤${BAR_MAX_DEPS}"
-    echo "- **Verdict:** $verdict"
+    echo "- **Standards:** p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms js≤${BAR_BUNDLE_KIB}KiB deps≤${BAR_MAX_DEPS}"
+    echo "- **Result:** $verdict"
     echo "- **PASS / FAIL / HUMAN:** $auto_pass / $auto_fail / $human"
-  } >"$dir/HON-MAGURO-REPORT.md"
-  echo "wrote $dir/HON-MAGURO-REPORT.md"
+  } >"$dir/HON-MAGURO-EVAL-REPORT.md"
+  echo "wrote $dir/HON-MAGURO-EVAL-REPORT.md"
 }
 
 cmd="${1:-help}"
 shift || true
 case "$cmd" in
   init)  cmd_init "${1:-.}" ;;
-  grade) cmd_grade "${1:-.}" ;;
+  eval) cmd_eval "${1:-.}" ;;
   bars)  cmd_bars ;;
   help|-h|--help) usage ;;
   version|-v|--version) echo "hm $VERSION" ;;

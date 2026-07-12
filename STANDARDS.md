@@ -1,13 +1,13 @@
-# Standards (hardcoded bars)
+# Standards
 
-You do not invent targets. These **are** the values. Prove you meet them or **fail**.
+The fixed Hon Maguro bar. **Eval** scores a project against these — you do not invent targets.
 
 ---
 
 ## Napkin
 
-| # | Hardcoded bar |
-|---|----------------|
+| # | Standard |
+|---|----------|
 | **N1** | Peak load = number + unit (QPS / RPS / DAU×actions) |
 | **N2** | Steady load = number + unit |
 | **N3** | Critical path p99 **≤ 300 ms** |
@@ -26,20 +26,20 @@ You do not invent targets. These **are** the values. Prove you meet them or **fa
 
 ### Why these numbers
 
-- **300 ms p99** — interactive web bar; slower needs a product reason and still fails unless N/A (batch jobs).
+- **300 ms p99** — interactive web bar; slower needs a product reason (batch may N/A).
 - **100 ms query** — keeps API budget honest under real data.
 - **200 KiB gzip** — perceived-performance default for main path.
 - **≤6 assumptions** — from napkin-math: more → restart design.
 - **Cost lines** — order-of-magnitude USD OK; blank not OK.
 
-Use [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) numbers when estimating.
+Use [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) when estimating.
 
 ---
 
 ## Build
 
-| # | Hardcoded bar |
-|---|----------------|
+| # | Standard |
+|---|----------|
 | **B1** | Schema/domain model first; names match the business |
 | **B2** | One auth path, one data-access path, one error path |
 | **B3** | `strict: true`; no `any` / `as unknown as` at boundaries; validate input |

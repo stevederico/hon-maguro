@@ -2,9 +2,14 @@
 
 **true tuna standards for software**
 
-Binary scorecard with **hardcoded bars**. You do not invent the grade line — meet it or **fail**.
+| Term | Meaning |
+|------|---------|
+| **Standards** | Fixed bars (what “good” means) — [STANDARDS.md](./STANDARDS.md) |
+| **Eval** | Score a project against those standards — [EVAL.md](./EVAL.md) + `hm eval` |
 
-Inspired by [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) (fixed reference numbers) and Toyosu grading (pass/fail, no middle).
+Binary: meet every standard → **Hon Maguro**. Miss any → **Fail**.
+
+Inspired by [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) and Toyosu pass/fail grading.
 
 ---
 
@@ -21,18 +26,18 @@ Inspired by [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) (fix
 
 ---
 
-## Hardcoded bars (must all pass)
+## Standards (summary)
 
 ### Napkin
 
-| # | Bar |
-|---|-----|
+| # | Standard |
+|---|----------|
 | N1–N2 | Peak + steady load with units |
 | N3 | Critical path **p99 ≤ 300 ms** |
 | N4 | Data now + growth with units |
 | N5 | Failure mode written |
-| N6–N10 | Cost ceiling + CPU/mem, storage, egress, third-party in **$/mo** |
-| N11 | API p99 budget **≤ 300 ms** |
+| N6–N10 | Cost ceiling + CPU/mem, storage, egress, third-party **$/mo** |
+| N11 | API p99 **≤ 300 ms** |
 | N12 | Key query **≤ 100 ms** |
 | N13 | Main JS **≤ 200 KiB** gzip (or named exception) |
 | N14 | Budgets checked in **CI or named script** |
@@ -40,8 +45,8 @@ Inspired by [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) (fix
 
 ### Build
 
-| # | Bar |
-|---|-----|
+| # | Standard |
+|---|----------|
 | B1 | Domain-first schema |
 | B2 | One path each: auth, data, errors |
 | B3 | `strict: true`; no boundary `any` |
@@ -50,25 +55,17 @@ Inspired by [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) (fix
 | B6 | One observable error path |
 | B7 | One-line why per heavy dep |
 
-Full text: [STANDARDS.md](./STANDARDS.md) · Scorecard: [CHECKLIST.md](./CHECKLIST.md)
-
 ---
 
-## Binary grade
-
-**Hon Maguro** = every bar met with evidence.  
-**Fail** = anything else.
-
----
-
-## Tool
+## Eval
 
 ```bash
-./bin/hm init ~/path/to/project
-./bin/hm grade ~/path/to/project
+./bin/hm init ~/path/to/project   # drop eval form
+./bin/hm eval ~/path/to/project   # run eval against standards
+./bin/hm bars                     # print numeric bars
 ```
 
-`grade` auto-checks what it can (strict, secrets, dep count, checklist ticks). Human still confirms domain/schema honesty.
+`eval` auto-checks what it can; human confirms the rest. Fill evidence on the eval form.
 
 ---
 

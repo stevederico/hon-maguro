@@ -1,20 +1,22 @@
-# Hon Maguro checklist
+# Hon Maguro eval
 
 **Project:**  
 **Date:**  
 **Reviewer:**  
-**Verdict:** ☐ Hon Maguro · ☐ Fail
+**Result:** ☐ Hon Maguro · ☐ Fail
 
-Standards are **hardcoded** below. You do not invent the bar.  
-Evidence = path or note proving you meet that bar. Empty evidence = fail.
+**Standards** are fixed in [STANDARDS.md](./STANDARDS.md).  
+**Eval** = score this project against those standards (pass/fail + evidence).
 
-## Napkin standards
+Empty evidence = fail.
 
-| # | Standard (fixed bar) | Pass? | Evidence |
-|---|----------------------|-------|----------|
+## Napkin
+
+| # | Standard | Pass? | Evidence |
+|---|----------|-------|----------|
 | N1 | Peak load written as a **number + unit** (QPS, RPS, or DAU×actions) | ☐ | |
 | N2 | Steady load written as a **number + unit** | ☐ | |
-| N3 | Critical path **p99 ≤ 300 ms** (or shorter); write the number in ms | ☐ | |
+| N3 | Critical path **p99 ≤ 300 ms**; write the number in ms | ☐ | |
 | N4 | Data size **now + monthly growth** with units (GB or row count) | ☐ | |
 | N5 | Failure mode: one sentence — primary dies → what happens | ☐ | |
 | N6 | Monthly **cost ceiling in USD** written | ☐ | |
@@ -25,13 +27,13 @@ Evidence = path or note proving you meet that bar. Empty evidence = fail.
 | N11 | API p99 budget **≤ 300 ms** and written | ☐ | |
 | N12 | Key query budget **≤ 100 ms** and written | ☐ | |
 | N13 | Client budget written (JS **≤ 200 KiB** gzip main path, or named exception) | ☐ | |
-| N14 | Budgets enforced by **CI or a named script** (not vibes) | ☐ | |
+| N14 | Budgets enforced by **CI or a named script** | ☐ | |
 | N15 | Design assumptions listed and **count ≤ 6** | ☐ | |
 
-## Build standards
+## Build
 
-| # | Standard (fixed bar) | Pass? | Evidence |
-|---|----------------------|-------|----------|
+| # | Standard | Pass? | Evidence |
+|---|----------|-------|----------|
 | B1 | Domain-first schema: tables/entities named for the business | ☐ | |
 | B2 | Exactly **one** path each for auth, data access, errors | ☐ | |
 | B3 | TypeScript **`strict: true`** (or equivalent); no `any` / cast-through-unknown at boundaries | ☐ | |
@@ -41,6 +43,5 @@ Evidence = path or note proving you meet that bar. Empty evidence = fail.
 | B7 | Every non-trivial dependency has a **one-line why** | ☐ | |
 
 **Rules**
-- Meet every hardcoded bar → **Hon Maguro**
-- Miss any → **Fail**
-- Exception only with evidence that names the bar and why (still usually Fail unless reviewer accepts N/A)
+- Every standard pass → **Hon Maguro**
+- Any fail → **Fail**
