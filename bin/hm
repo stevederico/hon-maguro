@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
-# Hon Maguro — eval projects against standards. Pass all or Fail.
-# Usage: hm <init|eval|bars|help> [path]
+# Hon Maguro — eval against STANDARDS.md. Binary: pass all or Fail.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.4.0"
+VERSION="0.5.0"
 
-# --- hardcoded bars (must match STANDARDS.md) ---
 BAR_P99_MS=300
 BAR_QUERY_MS=100
-BAR_BUNDLE_KIB=200
-BAR_MAX_ASSUMPTIONS=6
 BAR_MAX_DEPS=40
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -18,17 +14,11 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 usage() {
   cat <<EOF
-hm — Hon Maguro standards + eval
+hm v$VERSION — Hon Maguro eval
 
-  hm init [path]   Drop HON-MAGURO-EVAL.md (eval form)
-  hm eval [path]   Eval project against STANDARDS.md bars
-  hm bars          Print numeric standards
+  hm init [path]   Drop HON-MAGURO-EVAL.md
+  hm eval [path]   Eval against standards (auto: strict, secrets, deps)
   hm help
-
-Standards (v$VERSION):
-  p99 ≤ ${BAR_P99_MS}ms · query ≤ ${BAR_QUERY_MS}ms · JS ≤ ${BAR_BUNDLE_KIB}KiB gzip
-  assumptions ≤ ${BAR_MAX_ASSUMPTIONS} · deps ≤ ${BAR_MAX_DEPS}
-  All pass → Hon Maguro. Else → Fail.
 EOF
 }
 
@@ -42,14 +32,10 @@ as_int() {
 rg_count() {
   local pattern="$1" dir="$2"
   shift 2
-  local n
+  local n=0
   if have rg; then
     n="$(rg -n --hidden --glob '!.git/*' --glob '!node_modules/*' --glob '!dist/*' \
-      --glob '!.deno/*' --glob '!vendor/*' --glob '!*.lock' \
       "$@" -e "$pattern" "$dir" 2>/dev/null | wc -l | tr -d '[:space:]' || true)"
-  else
-    n="$(grep -RIn --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist \
-      --exclude-dir=.deno --exclude-dir=vendor "$@" -E "$pattern" "$dir" 2>/dev/null | wc -l | tr -d '[:space:]' || true)"
   fi
   as_int "$n"
 }
@@ -71,51 +57,17 @@ find_eval() {
   return 1
 }
 
-# Evidence column non-empty and not just ☐
-row_evidence() {
+# Evidence cell non-empty for | ID | ☐ | evidence |
+row_has_evidence() {
   local file="$1" id="$2"
-  local line
+  local line ev
   line="$(grep -E "^\| ${id} " "$file" 2>/dev/null | head -1 || true)"
   [[ -z "$line" ]] && return 1
-  # last text cell before trailing |
-  if echo "$line" | grep -qE '☑|\[x\]|\[X\]'; then
-    return 0
-  fi
-  # evidence cell has path-like or number content
-  if echo "$line" | grep -qE '\|[^|]*(docs/|src/|\.md|\.ts|[0-9]+ ms|\$[0-9])[^|]*\|[[:space:]]*$'; then
-    return 0
-  fi
-  # checked pass box: | ☐ | alone at end with empty evidence = fail
-  if echo "$line" | grep -qE '\|[[:space:]]*☐[[:space:]]*\|[[:space:]]*\|[[:space:]]*$'; then
-    return 1
-  fi
-  # any non-placeholder evidence between last two pipes
-  local ev
-  ev="$(echo "$line" | sed -E 's/.*\|[[:space:]]*☐[[:space:]]*\|[[:space:]]*//; s/\|[[:space:]]*$//; s/^[[:space:]]+//; s/[[:space:]]+$//')"
-  [[ -n "$ev" && "$ev" != "☐" ]] && return 0
-  return 1
+  ev="$(echo "$line" | awk -F'|' '{gsub(/^ +| +$/,"",$4); print $4}')"
+  [[ -n "$ev" && "$ev" != "☐" ]]
 }
 
-row() {
-  printf '  %-4s %-5s %s\n' "$1" "$2" "$3"
-  [[ -n "${4:-}" ]] && printf '        %s\n' "$4"
-}
-
-cmd_bars() {
-  cat <<EOF
-Hon Maguro hardcoded bars (v$VERSION)
-
-  N3/N11  critical / API p99  ≤ ${BAR_P99_MS} ms
-  N12     key query           ≤ ${BAR_QUERY_MS} ms
-  N13     main JS gzip        ≤ ${BAR_BUNDLE_KIB} KiB
-  N15     assumptions         ≤ ${BAR_MAX_ASSUMPTIONS}
-  B5      package.json deps   ≤ ${BAR_MAX_DEPS} (prod+dev)
-  B3      TypeScript          strict: true
-  B4      secrets             zero in git
-
-Full list: STANDARDS.md
-EOF
-}
+row() { printf '  %-3s %-5s %s\n' "$1" "$2" "$3"; }
 
 cmd_init() {
   local dir="${1:-.}"
@@ -133,237 +85,145 @@ cmd_init() {
   else
     echo "skip (exists): HON-MAGURO-EVAL.md"
   fi
-  echo "bars are fixed — fill evidence only, then: hm eval $dir"
+  echo "fill evidence, then: hm eval $dir"
 }
 
 cmd_eval() {
   local dir="${1:-.}"
   dir="$(cd "$dir" && pwd)"
-  local project cl=""
+  local project cl fail=0 human=0 pass=0
   project="$(basename "$dir")"
   cl="$(find_eval "$dir" || true)"
 
-  local auto_fail=0 human=0 auto_pass=0
-
-  echo "Hon Maguro eval v$VERSION (hardcoded bars)"
+  echo "Hon Maguro eval v$VERSION"
   echo "project: $project"
   echo "path:    $dir"
-  echo "bars:    p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms js≤${BAR_BUNDLE_KIB}KiB deps≤${BAR_MAX_DEPS}"
-  [[ -n "$cl" ]] && echo "eval:    $cl" || echo "eval:    missing (hm init)"
+  [[ -n "$cl" ]] && echo "eval:    $cl" || echo "eval:    missing — hm init"
   echo ""
-  echo "  id   auto  standard"
-  echo "  ---- ----- --------"
+  echo "  id  auto  note"
 
-  # Napkin rows: require evidence on eval form; numeric bars need numbers in evidence
-  local n label
-  for n in N1 N2 N3 N4 N5 N6 N7 N8 N9 N10 N11 N12 N13 N14 N15; do
-    case "$n" in
-      N1) label="Peak load (number+unit)" ;;
-      N2) label="Steady load (number+unit)" ;;
-      N3) label="Critical p99 ≤ ${BAR_P99_MS}ms" ;;
-      N4) label="Data now + growth" ;;
-      N5) label="Failure mode sentence" ;;
-      N6) label="Cost ceiling USD" ;;
-      N7) label="CPU/mem \$/mo" ;;
-      N8) label="Storage \$/mo" ;;
-      N9) label="Egress \$/mo" ;;
-      N10) label="Third-party \$/mo" ;;
-      N11) label="API p99 ≤ ${BAR_P99_MS}ms" ;;
-      N12) label="Query ≤ ${BAR_QUERY_MS}ms" ;;
-      N13) label="JS ≤ ${BAR_BUNDLE_KIB}KiB gzip" ;;
-      N14) label="CI or named script checks budgets" ;;
-      N15) label="Assumptions ≤ ${BAR_MAX_ASSUMPTIONS}" ;;
-    esac
-
-    if [[ -z "$cl" ]]; then
-      row "$n" FAIL "$label" "no eval form"
-      auto_fail=$((auto_fail + 1))
-      continue
-    fi
-
-    if ! row_evidence "$dir/$cl" "$n"; then
-      row "$n" FAIL "$label" "no evidence on scorecard"
-      auto_fail=$((auto_fail + 1))
-      continue
-    fi
-
-    local line
-    line="$(grep -E "^\| ${n} " "$dir/$cl" | head -1)"
-
-    case "$n" in
-      N3|N11)
-        local ms
-        ms="$(echo "$line" | grep -oE '[0-9]+[[:space:]]*ms' | head -1 | grep -oE '[0-9]+' || true)"
-        if [[ -n "$ms" ]] && [[ "$ms" -le "$BAR_P99_MS" ]]; then
-          row "$n" PASS "$label" "evidence ${ms}ms"
-          auto_pass=$((auto_pass + 1))
-        elif [[ -n "$ms" ]]; then
-          row "$n" FAIL "$label" "evidence ${ms}ms > ${BAR_P99_MS}ms bar"
-          auto_fail=$((auto_fail + 1))
-        else
-          row "$n" HUMAN "$label" "evidence present — confirm ≤${BAR_P99_MS}ms in ms"
-          human=$((human + 1))
-        fi
-        ;;
-      N12)
-        local qms
-        qms="$(echo "$line" | grep -oE '[0-9]+[[:space:]]*ms' | head -1 | grep -oE '[0-9]+' || true)"
-        if [[ -n "$qms" ]] && [[ "$qms" -le "$BAR_QUERY_MS" ]]; then
-          row "$n" PASS "$label" "evidence ${qms}ms"
-          auto_pass=$((auto_pass + 1))
-        elif [[ -n "$qms" ]]; then
-          row "$n" FAIL "$label" "evidence ${qms}ms > ${BAR_QUERY_MS}ms bar"
-          auto_fail=$((auto_fail + 1))
-        else
-          row "$n" HUMAN "$label" "evidence present — confirm ≤${BAR_QUERY_MS}ms"
-          human=$((human + 1))
-        fi
-        ;;
-      N6|N7|N8|N9|N10)
-        if echo "$line" | grep -qE '\$[0-9]'; then
-          row "$n" PASS "$label" "\$ amount in evidence"
-          auto_pass=$((auto_pass + 1))
-        else
-          row "$n" HUMAN "$label" "evidence present — confirm \$/mo"
-          human=$((human + 1))
-        fi
-        ;;
-      N14)
-        if [[ -d "$dir/.github/workflows" ]] || echo "$line" | grep -qE '\.(sh|ts|js|yml)|npm run|bun run|make '; then
-          row "$n" HUMAN "$label" "check path named — confirm it enforces budgets"
-          human=$((human + 1))
-        else
-          row "$n" FAIL "$label" "need CI or script named in evidence"
-          auto_fail=$((auto_fail + 1))
-        fi
-        ;;
-      N15)
-        local ac
-        ac="$(echo "$line" | grep -oE '[0-9]+' | head -1 || true)"
-        if [[ -n "$ac" ]] && [[ "$ac" -le "$BAR_MAX_ASSUMPTIONS" ]]; then
-          row "$n" PASS "$label" "count ${ac}"
-          auto_pass=$((auto_pass + 1))
-        elif [[ -n "$ac" ]]; then
-          row "$n" FAIL "$label" "count ${ac} > ${BAR_MAX_ASSUMPTIONS}"
-          auto_fail=$((auto_fail + 1))
-        else
-          row "$n" HUMAN "$label" "evidence present — confirm ≤${BAR_MAX_ASSUMPTIONS}"
-          human=$((human + 1))
-        fi
-        ;;
-      *)
-        row "$n" HUMAN "$label" "evidence present — confirm bar met"
-        human=$((human + 1))
-        ;;
-    esac
-  done
-
-  # B1
-  local schema
-  schema="$(find_first "$dir" schema.sql drizzle.config.ts prisma/schema.prisma \
-    backend/src/db/schema.ts src/db/schema.ts migrations docs/schema.md || true)"
-  [[ -z "$schema" && -d "$dir/migrations" ]] && schema="migrations/"
-  if [[ -n "$schema" ]]; then
-    row B1 HUMAN "Domain-first schema" "found $schema"
+  # All N* B* need evidence on form (human-owned napkin + most build)
+  local id
+  if [[ -z "$cl" ]]; then
+    for id in N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B3 B4 B5 B6 B7; do
+      row "$id" FAIL "no eval form"
+      fail=$((fail + 1))
+    done
   else
-    row B1 HUMAN "Domain-first schema" "no schema file — N/A only for pure libs"
+    for id in N1 N2 N3 N4 N5 N6 N7 N8 N9 B1 B2 B6 B7; do
+      if ! row_has_evidence "$dir/$cl" "$id"; then
+        row "$id" FAIL "no evidence"
+        fail=$((fail + 1))
+        continue
+      fi
+      local line ms
+      line="$(grep -E "^\| ${id} " "$dir/$cl" | head -1)"
+      ms="$(echo "$line" | grep -oE '[0-9]+[[:space:]]*ms' | head -1 | grep -oE '[0-9]+' || true)"
+      if [[ "$id" == "N2" && -n "$ms" && "$ms" -gt "$BAR_P99_MS" ]]; then
+        row N2 FAIL "evidence ${ms}ms > ${BAR_P99_MS}ms"
+        fail=$((fail + 1))
+      elif [[ "$id" == "N6" && -n "$ms" && "$ms" -gt "$BAR_QUERY_MS" ]]; then
+        row N6 FAIL "evidence ${ms}ms > ${BAR_QUERY_MS}ms"
+        fail=$((fail + 1))
+      elif [[ "$id" == "N2" && -n "$ms" ]]; then
+        row N2 PASS "p99 ${ms}ms ≤ ${BAR_P99_MS}ms"
+        pass=$((pass + 1))
+      elif [[ "$id" == "N6" && -n "$ms" ]]; then
+        row N6 PASS "query ${ms}ms ≤ ${BAR_QUERY_MS}ms"
+        pass=$((pass + 1))
+      else
+        row "$id" HUMAN "evidence present — confirm vs STANDARDS.md"
+        human=$((human + 1))
+      fi
+    done
   fi
-  human=$((human + 1))
 
-  row B2 HUMAN "One path: auth/data/errors" "manual"
-  human=$((human + 1))
-
-  # B3
+  # B3 auto: strict + any
   local tsconfig any_count
   tsconfig="$(find_first "$dir" tsconfig.json backend/tsconfig.json frontend/tsconfig.json || true)"
   any_count="$(rg_count 'as any|: any\b|as unknown as' "$dir" --glob '*.ts' --glob '*.tsx')"
   if [[ -n "$tsconfig" ]] && grep -qE '"strict"\s*:\s*true' "$dir/$tsconfig" 2>/dev/null; then
     if [[ "$any_count" -gt 0 ]]; then
-      row B3 FAIL "strict + no boundary any" "~$any_count any/cast hits"
-      auto_fail=$((auto_fail + 1))
+      row B3 FAIL "strict on but ~$any_count any/cast hits"
+      fail=$((fail + 1))
     else
-      row B3 PASS "strict + no boundary any" "$tsconfig strict"
-      auto_pass=$((auto_pass + 1))
+      row B3 PASS "strict: true, no any hits"
+      pass=$((pass + 1))
     fi
   elif [[ -n "$tsconfig" ]]; then
-    row B3 FAIL "strict + no boundary any" "strict not true"
-    auto_fail=$((auto_fail + 1))
+    row B3 FAIL "strict not true"
+    fail=$((fail + 1))
   else
-    row B3 HUMAN "strict + no boundary any" "no tsconfig"
-    human=$((human + 1))
+    if [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" B3; then
+      row B3 HUMAN "no tsconfig — evidence only"
+      human=$((human + 1))
+    else
+      row B3 FAIL "no tsconfig / no evidence"
+      fail=$((fail + 1))
+    fi
   fi
 
-  # B4
+  # B4 auto: secrets
   local secret_hits env_tracked=0
-  secret_hits="$(rg_count '(api[_-]?key|secret[_-]?key|sk_live|sk_test|ghp_[A-Za-z0-9]{20,}|xox[baprs]-)' "$dir" \
-    --glob '!.env*' --glob '!*.example' --glob '!*.md' --glob '!*.svg')"
+  secret_hits="$(rg_count '(api[_-]?key|secret[_-]?key|sk_live|sk_test|ghp_[A-Za-z0-9]{20,})' "$dir" \
+    --glob '!.env*' --glob '!*.example' --glob '!*.md')"
   if [[ -d "$dir/.git" ]] && have git; then
     git -C "$dir" ls-files | grep -qE '(^|/)\.env$' && env_tracked=1 || true
   fi
   if [[ "$env_tracked" -eq 1 ]]; then
-    row B4 FAIL "zero secrets in git" ".env tracked"
-    auto_fail=$((auto_fail + 1))
+    row B4 FAIL ".env tracked"
+    fail=$((fail + 1))
   elif [[ "$secret_hits" -gt 0 ]]; then
-    row B4 FAIL "zero secrets in git" "~$secret_hits secret-shaped hits"
-    auto_fail=$((auto_fail + 1))
+    row B4 FAIL "~$secret_hits secret-shaped hits"
+    fail=$((fail + 1))
   else
-    row B4 PASS "zero secrets in git" "no .env tracked / no obvious secrets"
-    auto_pass=$((auto_pass + 1))
+    row B4 PASS "no tracked .env / no obvious secrets"
+    pass=$((pass + 1))
   fi
 
-  # B5
+  # B5 auto: deps
   local dep_count=0
   if [[ -f "$dir/package.json" ]] && have python3; then
-    dep_count="$(as_int "$(python3 - <<PY
-import json
-p=json.load(open("$dir/package.json"))
-print(len(p.get("dependencies") or {})+len(p.get("devDependencies") or {}))
-PY
-)")"
-  fi
-  if [[ -f "$dir/package.json" ]]; then
+    dep_count="$(as_int "$(python3 -c "import json;p=json.load(open('$dir/package.json'));print(len(p.get('dependencies')or{})+len(p.get('devDependencies')or{}))")")"
     if [[ "$dep_count" -le "$BAR_MAX_DEPS" ]]; then
-      row B5 PASS "deps ≤ ${BAR_MAX_DEPS}" "$dep_count deps"
-      auto_pass=$((auto_pass + 1))
+      row B5 PASS "$dep_count deps ≤ $BAR_MAX_DEPS"
+      pass=$((pass + 1))
+    elif [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" B5; then
+      row B5 HUMAN "$dep_count deps — justify extras in evidence"
+      human=$((human + 1))
     else
-      if [[ -n "$cl" ]] && row_evidence "$dir/$cl" B5; then
-        row B5 HUMAN "deps ≤ ${BAR_MAX_DEPS}" "$dep_count deps — evidence must justify each extra"
-        human=$((human + 1))
-      else
-        row B5 FAIL "deps ≤ ${BAR_MAX_DEPS}" "$dep_count deps, no justification evidence"
-        auto_fail=$((auto_fail + 1))
-      fi
+      row B5 FAIL "$dep_count deps > $BAR_MAX_DEPS"
+      fail=$((fail + 1))
     fi
   else
-    row B5 HUMAN "deps ≤ ${BAR_MAX_DEPS}" "no package.json"
-    human=$((human + 1))
+    if [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" B5; then
+      row B5 HUMAN "no package.json — evidence only"
+      human=$((human + 1))
+    else
+      row B5 FAIL "no package.json / no evidence"
+      fail=$((fail + 1))
+    fi
   fi
-
-  row B6 HUMAN "one error path" "manual"
-  human=$((human + 1))
-  row B7 HUMAN "one-line why per heavy dep" "manual"
-  human=$((human + 1))
 
   echo ""
-  echo "summary  PASS=$auto_pass  FAIL=$auto_fail  HUMAN=$human"
+  echo "summary  PASS=$pass  FAIL=$fail  HUMAN=$human"
   local verdict="FAIL"
-  if [[ "$auto_fail" -eq 0 && "$human" -eq 0 ]]; then
+  if [[ "$fail" -eq 0 && "$human" -eq 0 ]]; then
     verdict="HON MAGURO"
-  elif [[ "$auto_fail" -eq 0 ]]; then
-    verdict="FAIL (HUMAN open — not Maguro until cleared)"
+  elif [[ "$fail" -eq 0 ]]; then
+    verdict="FAIL (HUMAN open)"
   else
-    verdict="FAIL ($auto_fail auto)"
+    verdict="FAIL ($fail)"
   fi
-  echo "verdict: $verdict"
+  echo "result:  $verdict"
 
   {
     echo "# Hon Maguro eval — $project"
     echo ""
     echo "- **Date:** $(date +%Y-%m-%d)"
     echo "- **Tool:** hm $VERSION"
-    echo "- **Standards:** p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms js≤${BAR_BUNDLE_KIB}KiB deps≤${BAR_MAX_DEPS}"
     echo "- **Result:** $verdict"
-    echo "- **PASS / FAIL / HUMAN:** $auto_pass / $auto_fail / $human"
+    echo "- **PASS / FAIL / HUMAN:** $pass / $fail / $human"
   } >"$dir/HON-MAGURO-EVAL-REPORT.md"
   echo "wrote $dir/HON-MAGURO-EVAL-REPORT.md"
 }
@@ -371,10 +231,10 @@ PY
 cmd="${1:-help}"
 shift || true
 case "$cmd" in
-  init)  cmd_init "${1:-.}" ;;
+  init) cmd_init "${1:-.}" ;;
   eval) cmd_eval "${1:-.}" ;;
-  bars)  cmd_bars ;;
   help|-h|--help) usage ;;
   version|-v|--version) echo "hm $VERSION" ;;
-  *) usage; die "unknown command: $cmd" ;;
+  bars) echo "see STANDARDS.md (p99≤${BAR_P99_MS}ms query≤${BAR_QUERY_MS}ms deps≤${BAR_MAX_DEPS})" ;;
+  *) usage; die "unknown: $cmd" ;;
 esac

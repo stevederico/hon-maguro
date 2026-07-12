@@ -1,55 +1,39 @@
 # Standards
 
-The fixed Hon Maguro bar. **Eval** scores a project against these — you do not invent targets.
-
----
+Fixed bars. **Eval** scores a project against these. Miss any → **Fail**.
 
 ## Napkin
 
 | # | Standard |
 |---|----------|
-| **N1** | Peak load = number + unit (QPS / RPS / DAU×actions) |
-| **N2** | Steady load = number + unit |
-| **N3** | Critical path p99 **≤ 300 ms** |
-| **N4** | Data now + monthly growth, with units |
-| **N5** | Failure mode: one concrete sentence |
-| **N6** | Monthly cost ceiling in USD |
-| **N7** | CPU/mem **$/mo** |
-| **N8** | Storage **$/mo** |
-| **N9** | Egress **$/mo** |
-| **N10** | Third-party **$/mo** |
-| **N11** | API p99 budget **≤ 300 ms** |
-| **N12** | Key query budget **≤ 100 ms** |
-| **N13** | Main-path JS **≤ 200 KiB** gzip (or named exception in evidence) |
-| **N14** | Budget check = CI job or named script in repo |
-| **N15** | Assumptions listed, **≤ 6** |
-
-### Why these numbers
-
-- **300 ms p99** — interactive web bar; slower needs a product reason (batch may N/A).
-- **100 ms query** — keeps API budget honest under real data.
-- **200 KiB gzip** — perceived-performance default for main path.
-- **≤6 assumptions** — from napkin-math: more → restart design.
-- **Cost lines** — order-of-magnitude USD OK; blank not OK.
-
-Use [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) when estimating.
-
----
+| **N1** | Peak **and** steady load written (number + unit each) |
+| **N2** | Critical path / API **p99 ≤ 300 ms** (number in evidence) |
+| **N3** | Data now + monthly growth (units) |
+| **N4** | Failure mode: one sentence (primary dies → …) |
+| **N5** | Cost itemized in **$/mo**: ceiling, CPU/mem, storage, egress, third-party |
+| **N6** | Key query **≤ 100 ms** |
+| **N7** | Main-path JS **≤ 200 KiB** gzip (or named exception) |
+| **N8** | Budgets checked by **CI or named script** |
+| **N9** | Assumptions listed, **≤ 6** |
 
 ## Build
 
 | # | Standard |
 |---|----------|
-| **B1** | Schema/domain model first; names match the business |
-| **B2** | One auth path, one data-access path, one error path |
-| **B3** | `strict: true`; no `any` / `as unknown as` at boundaries; validate input |
-| **B4** | No secrets in tree; `.env` not tracked |
-| **B5** | Prod+dev dependencies **≤ 40**, or every extra justified in evidence |
-| **B6** | Single error mapping; user-safe + diagnosable |
-| **B7** | One-line justification per non-trivial dependency |
+| **B1** | Domain-first schema (business names) |
+| **B2** | One path each: auth, data access, errors |
+| **B3** | `strict: true`; no boundary `any` / cast-through-unknown |
+| **B4** | Zero secrets in git; no tracked `.env` |
+| **B5** | Prod+dev deps **≤ 40** (or each extra justified) |
+| **B6** | One error path: user-safe + diagnosable |
+| **B7** | One-line why per non-trivial dependency |
 
----
+## Why the numbers
 
-## Build discipline (not scored alone)
+- **300 ms p99** — interactive web bar  
+- **100 ms query** — keeps the API budget honest  
+- **200 KiB gzip** — main-path perceived perf  
+- **≤6 assumptions** — napkin-math: more → restart  
+- Cost: order-of-magnitude USD OK; blank not OK  
 
-1. Need to exist? 2. In codebase? 3. Stdlib/platform? 4. Installed dep? 5. One line? 6. Minimum that works.
+Estimates: [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math).
