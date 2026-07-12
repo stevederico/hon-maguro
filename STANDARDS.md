@@ -1,177 +1,131 @@
 # Standards (full)
 
-Each standard: rule, why, pass evidence, common fails.
+Binary: every standard below passes, or the project **fails**.
 
 ---
 
-## 1. Domain-first schema
+## Napkin standards
 
-**Rule:** Model the business in data first. Application code is a client of that model.
+Required numbers with units. Empty or vibes-only = fail.
 
-**Why:** Schema outlives frameworks. Wrong tables → every feature pays interest.
+### N1. Peak QPS (or equivalent load)
 
-**Pass evidence:**
-- ERD or migration set that a domain expert can read
-- Feature PRs change schema intentionally, not "add a JSON blob column"
+**Rule:** Write the busiest load you design for.
 
-**Fails:**
-- UI components invent fields the DB never stores
-- "Flexible" `metadata` JSON as the real model
-- ORM entities that don't match how the business talks
+**Pass:** Number + unit (e.g. `120 QPS`, `50k DAU × 3 actions`).
 
----
+**Fails:** "we'll scale", "lots of users", blank.
 
-## 2. Architecture from load
+### N2. Steady load
 
-**Rule:** Write the napkin before choosing the stack.
+**Rule:** Typical day load, not only peak.
 
-Minimum napkin fields:
-- Peak and steady QPS (or DAU × actions)
-- p50 / p99 latency target for the critical path
-- Data size / growth per month
-- Failure modes (what dies when primary dies?)
-- Monthly cost ceiling
+**Pass:** Steady QPS or DAU (or RPS) with units.
 
-**Pass evidence:** `docs/napkin.md` or design note with numbers and units.
+### N3. Critical path p99
 
-**Fails:**
-- "We'll use Kubernetes because scale" with no QPS
-- Database choice from Twitter threads
-- Infinite horizontal scale talk for 200 users
+**Rule:** Latency target for the path that defines the product.
 
----
+**Pass:** Number in ms (or µs) — e.g. `p99 200ms`.
 
-## 3. One path per concern
+### N4. Data now → growth
 
-**Rule:** Exactly one way for auth, data access, config, and error reporting.
+**Rule:** Size and monthly growth of the data that matters.
 
-**Why:** Dual paths = dual bugs and nobody knows which is real.
+**Pass:** `X GB now → Y GB/mo` (or rows, with conversion).
 
-**Pass evidence:** Grep shows one auth middleware, one DB access layer, one error mapper.
+### N5. Failure mode
 
-**Fails:**
-- Session cookies *and* JWT *and* API keys with three validators
-- Some routes use the repository; others raw SQL in handlers "just this once"
-- Feature flags forever that never delete the old path
+**Rule:** What happens when the primary dependency dies.
 
----
+**Pass:** One concrete sentence (failover, read-only, hard down).
 
-## 4. Strict types at boundaries
+### N6–N10. Cost
 
-**Rule:** Trust ends at the process boundary. Validate input; narrow unknowns; never silence the typechecker.
+**Rule:** Monthly money is part of the design.
 
-**Pass evidence:**
-- Request bodies validated (schema lib or manual guards)
-- `strict` TypeScript (or equivalent) on
-- No `any`, no `as T` on `JSON.parse`, no blanket `!`
+| ID | Field |
+|----|--------|
+| N6 | Ceiling ($/mo) |
+| N7 | CPU/mem |
+| N8 | Storage |
+| N9 | Egress |
+| N10 | Third-party APIs |
 
-**Fails:**
-- `JSON.parse(body) as User`
-- `@ts-ignore` to ship
-- Shared "utils" that return `any`
+**Pass:** Dollar amounts (order-of-magnitude OK). Use napkin-math style tables.
 
----
+**Fails:** "cheap free tier", no numbers.
 
-## 5. Secrets never in tree
+### N11–N14. Perf budgets
 
-**Rule:** Credentials only via environment / secret store. Pre-publish artifacts get a leak audit.
+| ID | Field |
+|----|--------|
+| N11 | API p99 (ms) |
+| N12 | Key query (ms) |
+| N13 | Client/bundle (size or TTI) |
+| N14 | How checked (CI, script, manual smoke — name it) |
 
-**Pass evidence:**
-- `.env` gitignored; example `.env.example` with dummy values
-- No tokens in git history for current secrets
-- Release checklist includes secret scan for `.app` / Docker / zip
+**Pass:** Targets + a real check method. Budget with no check = fail N14.
 
-**Fails:**
-- API keys in source, README, or committed `.env`
-- Symlinks into secret dirs packed into release bundles
+### N15. Assumptions ≤6
+
+**Rule:** List the guesses under the design (≤6). More → restart.
+
+**Pass:** Numbered list of assumptions.
 
 ---
 
-## 6. Delete is a feature
+## Build standards
 
-**Rule:** The highest-leverage change is often removal.
+### B1. Domain-first schema
 
-**Pass evidence:**
-- Unused dependencies removed after feature deletion
-- CHANGELOG or commits that shrink surface area
-- No commented-out blocks "in case we need it"
+**Rule:** Model the business in data first. App code is a client of that model.
 
-**Fails:**
-- Dependencies added for one demo call and left forever
-- Three CSS systems, two state libraries
-- Feature flags with both branches living years
+**Pass:** Readable schema/migrations; names match the domain.
 
----
+**Fails:** UI-invented fields; JSON blob as the real model.
 
-## 7. Observable defaults
+### B2. One path per concern
 
-**Rule:** Failures are diagnosable without SSH folklore.
+**Rule:** One way for auth, data access, config, errors.
 
-**Pass evidence:**
-- User sees a safe message; logs have request id + cause
-- One error-handling path maps domain errors → UI/HTTP
-- Health or smoke check for the critical dependency (DB)
+**Pass:** Grep shows one path each.
 
-**Fails:**
-- Empty 500s with no log line
-- `console.log` as the only observability
-- Errors swallowed in catch blocks
+**Fails:** Dual auth, dual DB layers, eternal feature flags.
 
----
+### B3. Strict types at boundaries
 
-## 8. Cost transparent
+**Rule:** Validate input; no `any` / cast-through-unknown silencing.
 
-**Rule:** Someone can estimate monthly cost from the napkin without asking finance.
+**Pass:** `strict` on (or equiv.); runtime validation at edges.
 
-**Pass evidence:** Table: CPU, memory, storage, egress, third-party APIs — units and $/mo.
+### B4. Secrets never in tree
 
-**Fails:**
-- "It's cheap on the free tier" with no growth line
-- Logging/metrics vendors unbounded
-- Chatty microservices with cross-AZ tax ignored
+**Rule:** Env/secret store only; no tracked `.env`; release leak audit when shipping artifacts.
+
+### B5. Delete is a feature
+
+**Rule:** Dead code, unused deps, dead flags gone.
+
+### B6. Observable defaults
+
+**Rule:** User-safe errors; ops can answer "what failed?" in one place.
+
+### B7. No cargo cult
+
+**Rule:** Every non-trivial dep/abstraction has a one-line why.
 
 ---
 
-## 9. Perf budget written
-
-**Rule:** Numbers exist before optimization theater.
-
-Suggested starter budgets (adjust with napkin):
-- Critical API p99 under agreed ms
-- Initial JS for main path under agreed KiB (or framework-justified)
-- Key query under agreed ms with realistic data volume
-
-**Pass evidence:** Budget doc + at least one automated or scripted check.
-
-**Fails:**
-- "Feels fast on my laptop"
-- Optimization PRs with no before/after
-- Unindexed tables "until we need it" at 10M rows
-
----
-
-## 10. No cargo cult
-
-**Rule:** Every dependency and layer must earn a one-line justification.
-
-**Pass evidence:** README or ADR: "We use X because Y; alternative Z rejected because W."
-
-**Fails:**
-- Microservices for a single team and single deployable
-- Abstract factory for one implementation
-- New framework because it is trending
-
----
-
-## Climbing the ladder (build discipline)
+## Build discipline
 
 Before adding code, stop at the first rung that holds:
 
-1. Does this need to exist?
+1. Need to exist?
 2. Already in this codebase?
-3. Stdlib / platform already does it?
-4. Already-installed dependency?
+3. Stdlib / platform?
+4. Already-installed dep?
 5. One line?
-6. Only then: minimum that works
+6. Minimum that works
 
-Mark deliberate shortcuts with a debt tag naming the ceiling and upgrade path.
+Mark deliberate shortcuts with a debt tag naming ceiling + upgrade path.

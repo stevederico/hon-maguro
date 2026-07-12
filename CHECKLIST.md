@@ -5,41 +5,43 @@
 **Reviewer:**  
 **Verdict:** ☐ Hon Maguro · ☐ Fail
 
-Evidence = path, link, or short note. Empty evidence = fail.
+Empty value = fail. Units required (ms, QPS, $, GB).
 
-| # | Standard | Pass? | Evidence |
-|---|----------|-------|----------|
-| 1 | Domain-first schema | ☐ | |
-| 2 | Architecture from load (napkin with units) | ☐ | |
-| 3 | One path per concern | ☐ | |
-| 4 | Strict types at boundaries | ☐ | |
-| 5 | Secrets never in tree | ☐ | |
-| 6 | Delete is a feature (no dead weight) | ☐ | |
-| 7 | Observable defaults | ☐ | |
-| 8 | Cost transparent ($/mo napkin) | ☐ | |
-| 9 | Perf budget written + checked | ☐ | |
-| 10 | No cargo cult (deps justified) | ☐ | |
+## Napkin standards (required numbers)
+
+These *are* the standard — not optional notes.
+
+| # | Standard | Value | Pass? |
+|---|----------|-------|-------|
+| N1 | Peak QPS (or equiv. load) | ___ | ☐ |
+| N2 | Steady load (QPS or DAU) | ___ | ☐ |
+| N3 | Critical path p99 | ___ ms | ☐ |
+| N4 | Data now → growth | ___ GB → ___ GB/mo | ☐ |
+| N5 | Failure mode (primary dies →) | ___ | ☐ |
+| N6 | Monthly cost ceiling | $___ | ☐ |
+| N7 | Cost: CPU/mem | $___ /mo | ☐ |
+| N8 | Cost: storage | $___ /mo | ☐ |
+| N9 | Cost: egress | $___ /mo | ☐ |
+| N10 | Cost: third-party | $___ /mo | ☐ |
+| N11 | Perf budget: API p99 | ___ ms | ☐ |
+| N12 | Perf budget: key query | ___ ms | ☐ |
+| N13 | Perf budget: client/bundle | ___ | ☐ |
+| N14 | How budgets are checked | ___ | ☐ |
+| N15 | Assumptions listed (≤6) | ___ | ☐ |
+
+## Build standards
+
+| # | Standard | Pass? | Evidence (path / note) |
+|---|----------|-------|------------------------|
+| B1 | Domain-first schema | ☐ | |
+| B2 | One path per concern | ☐ | |
+| B3 | Strict types at boundaries | ☐ | |
+| B4 | Secrets never in tree | ☐ | |
+| B5 | Delete is a feature | ☐ | |
+| B6 | Observable defaults | ☐ | |
+| B7 | No cargo cult (deps justified) | ☐ | |
 
 **Rules**
-- All 10 pass → **Hon Maguro**
-- Any fail → **Fail** (no middle grades)
-- "N/A" only if the concern truly does not exist (e.g. no network secrets in a pure lib) — write why
-
-## Napkin stub (paste into evidence for #2 / #8 / #9)
-
-```text
-Workload: ___ QPS peak / ___ DAU
-Critical path p99: ___ ms
-Data: ___ GB now → ___ GB / month
-Failure mode: ___
-Monthly cost ceiling: $___
-  CPU/mem: $___
-  Storage: $___
-  Egress: $___
-  Third-party: $___
-Perf budgets: API p99 ___ · query ___ · bundle ___
-```
-
-## Notes
-
--
+- Every N* and B* row pass → **Hon Maguro**
+- Any fail or blank → **Fail**
+- "N/A" only if the concern cannot exist — write why in Value/Evidence

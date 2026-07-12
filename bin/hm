@@ -4,7 +4,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.1.0"
+VERSION="0.2.0"
 
 die() { echo "error: $*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -13,27 +13,17 @@ usage() {
   cat <<'EOF'
 hm — Hon Maguro scorecard tool
 
-  hm init [path]    Drop checklist + napkin stub into path (default: .)
+  hm init [path]    Drop HON-MAGURO-CHECKLIST.md (napkin + build standards)
   hm grade [path]   Auto-scan path; print grade report (default: .)
   hm help           This help
 
-Auto checks are signals only. HUMAN rows need a person + evidence.
-All 10 pass → Hon Maguro. Anything else → Fail. No middle grades.
+Napkin fields (N1–N15) are standards, not notes.
+All N* + B* pass → Hon Maguro. Anything else → Fail.
 EOF
 }
 
 # --- helpers ---
 
-rel_from() {
-  local base="$1" file="$2"
-  if have python3; then
-    python3 -c 'import os,sys; print(os.path.relpath(sys.argv[2], sys.argv[1]))' "$base" "$file"
-  else
-    echo "$file"
-  fi
-}
-
-# Count matches under dir, skip heavy/noise trees. Returns single integer.
 rg_count() {
   local pattern="$1" dir="$2"
   shift 2
@@ -50,7 +40,6 @@ rg_count() {
   echo "$n"
 }
 
-# Force a clean int (guards against multiline / empty).
 as_int() {
   local n="${1:-0}"
   n="$(printf '%s' "$n" | tr -d '[:space:]')"
@@ -58,7 +47,6 @@ as_int() {
   echo "$n"
 }
 
-# First matching path or empty
 find_first() {
   local dir="$1"
   shift
@@ -72,15 +60,33 @@ find_first() {
   return 1
 }
 
-find_napkin() {
+# Scorecard path if present
+find_checklist() {
   local dir="$1"
   local f
-  for f in docs/napkin.md NAPKIN.md napkin.md docs/NAPKIN.md HON-MAGURO.md; do
+  for f in HON-MAGURO-CHECKLIST.md docs/HON-MAGURO-CHECKLIST.md; do
     [[ -f "$dir/$f" ]] && { echo "$f"; return 0; }
   done
-  # checklist with filled napkin stub
-  if [[ -f "$dir/HON-MAGURO-CHECKLIST.md" ]] && grep -qE 'QPS|p99|\$/mo|\$[0-9]' "$dir/HON-MAGURO-CHECKLIST.md" 2>/dev/null; then
-    echo "HON-MAGURO-CHECKLIST.md"
+  return 1
+}
+
+# True if checklist cell for id looks filled (not ___ / blank placeholder)
+checklist_filled() {
+  local file="$1" id="$2"
+  # row like: | N1 | ... | value | ☐ |
+  local line
+  line="$(grep -E "^\| ${id} " "$file" 2>/dev/null | head -1 || true)"
+  [[ -z "$line" ]] && return 1
+  # fail if still placeholder
+  if echo "$line" | grep -qE '___|\$___|☐ \|[[:space:]]*\|$'; then
+    return 1
+  fi
+  # value column roughly non-empty: has digit or $ or word longer than 2 in third cells
+  if echo "$line" | grep -qE '[0-9]|\$[0-9A-Za-z]|[A-Za-z]{3,}'; then
+    # still reject pure template tails
+    if echo "$line" | grep -qE '\| ___ \|'; then
+      return 1
+    fi
     return 0
   fi
   return 1
@@ -92,12 +98,9 @@ cmd_init() {
   local dir="${1:-.}"
   mkdir -p "$dir"
   dir="$(cd "$dir" && pwd)"
-  local date
+  local date project
   date="$(date +%Y-%m-%d)"
-  local project
   project="$(basename "$dir")"
-
-  mkdir -p "$dir/docs"
 
   if [[ ! -f "$dir/HON-MAGURO-CHECKLIST.md" ]]; then
     sed -e "s/^\*\*Project:\*\*.*/**Project:** $project/" \
@@ -108,65 +111,16 @@ cmd_init() {
     echo "skip checklist (exists): HON-MAGURO-CHECKLIST.md"
   fi
 
-  if [[ ! -f "$dir/docs/napkin.md" ]]; then
-    cat >"$dir/docs/napkin.md" <<EOF
-# Napkin — $project
-
-> Hon Maguro standards #2 / #8 / #9. Fill units. Empty = fail.
-
-## Workload
-- Peak QPS: ___
-- Steady QPS / DAU: ___
-
-## Latency
-- Critical path p99: ___ ms
-- Key query p99: ___ ms
-
-## Data
-- Now: ___ GB
-- Growth: ___ GB / month
-
-## Failure modes
-- Primary dies → ___
-- Dep X dies → ___
-
-## Monthly cost ceiling: \$___
-| Line | Amount | \$ / month |
-|------|--------|-----------|
-| CPU / mem | | |
-| Storage | | |
-| Egress | | |
-| Third-party | | |
-| **Total** | | |
-
-## Perf budgets
-| Budget | Target | How checked |
-|--------|--------|-------------|
-| API p99 | ___ ms | |
-| Query | ___ ms | |
-| Bundle / client | ___ | |
-
-## Assumptions (≤6)
-1.
-2.
-3.
-EOF
-    echo "wrote $dir/docs/napkin.md"
-  else
-    echo "skip napkin (exists): docs/napkin.md"
-  fi
-
-  echo "next: fill napkin + checklist, then: hm grade $dir"
+  echo "next: fill N1–N15 + B1–B7, then: hm grade $dir"
 }
 
 # --- grade ---
 
-# Print one row. status: PASS|FAIL|HUMAN
 row() {
   local id="$1" status="$2" name="$3" evidence="$4"
-  printf '  %2s  %-5s  %s\n' "$id" "$status" "$name"
+  printf '  %-4s %-5s %s\n' "$id" "$status" "$name"
   if [[ -n "$evidence" ]]; then
-    printf '      %s\n' "$evidence"
+    printf '        %s\n' "$evidence"
   fi
 }
 
@@ -177,14 +131,90 @@ cmd_grade() {
   project="$(basename "$dir")"
   local auto_fail=0 human=0 auto_pass=0
 
+  local cl=""
+  cl="$(find_checklist "$dir" || true)"
+
   echo "Hon Maguro grade v$VERSION"
   echo "project: $project"
   echo "path:    $dir"
+  [[ -n "$cl" ]] && echo "card:    $cl" || echo "card:    (missing — run hm init)"
   echo ""
-  echo "  #   auto   standard"
-  echo "  --  -----  --------"
+  echo "  id   auto  standard"
+  echo "  ---- ----- --------"
 
-  # 1 Domain-first schema
+  # --- Napkin N1–N15 ---
+  if [[ -z "$cl" ]]; then
+    local n
+    for n in N1 N2 N3 N4 N5 N6 N7 N8 N9 N10 N11 N12 N13 N14 N15; do
+      row "$n" FAIL "napkin standard" "no checklist — run: hm init"
+      auto_fail=$((auto_fail + 1))
+    done
+  else
+    local n label
+    for n in N1 N2 N3 N4 N5 N6 N7 N8 N9 N10 N11 N12 N13 N14 N15; do
+      case "$n" in
+        N1) label="Peak load (QPS)" ;;
+        N2) label="Steady load (QPS/DAU)" ;;
+        N3) label="Critical path p99" ;;
+        N4) label="Data now → growth" ;;
+        N5) label="Failure mode" ;;
+        N6) label="Monthly cost ceiling" ;;
+        N7) label="Cost: CPU/mem" ;;
+        N8) label="Cost: storage" ;;
+        N9) label="Cost: egress" ;;
+        N10) label="Cost: third-party" ;;
+        N11) label="Perf budget: API p99" ;;
+        N12) label="Perf budget: query" ;;
+        N13) label="Perf budget: client/bundle" ;;
+        N14) label="How budgets are checked" ;;
+        N15) label="Assumptions (≤6)" ;;
+      esac
+      if checklist_filled "$dir/$cl" "$n"; then
+        # unit sanity for numeric rows
+        local line
+        line="$(grep -E "^\| ${n} " "$dir/$cl" | head -1)"
+        case "$n" in
+          N3|N11|N12)
+            if echo "$line" | grep -qE '[0-9]+[[:space:]]*ms|[0-9]+ms'; then
+              row "$n" PASS "$label" "filled with ms"
+              auto_pass=$((auto_pass + 1))
+            else
+              row "$n" FAIL "$label" "need number + ms"
+              auto_fail=$((auto_fail + 1))
+            fi
+            ;;
+          N6|N7|N8|N9|N10)
+            if echo "$line" | grep -qE '\$[0-9]'; then
+              row "$n" PASS "$label" "filled with \$"
+              auto_pass=$((auto_pass + 1))
+            else
+              row "$n" FAIL "$label" "need \$ amount"
+              auto_fail=$((auto_fail + 1))
+            fi
+            ;;
+          N1|N2)
+            if echo "$line" | grep -qE '[0-9]+'; then
+              row "$n" PASS "$label" "filled"
+              auto_pass=$((auto_pass + 1))
+            else
+              row "$n" FAIL "$label" "need a number"
+              auto_fail=$((auto_fail + 1))
+            fi
+            ;;
+          *)
+            row "$n" PASS "$label" "filled in checklist"
+            auto_pass=$((auto_pass + 1))
+            ;;
+        esac
+      else
+        row "$n" FAIL "$label" "blank/placeholder in checklist"
+        auto_fail=$((auto_fail + 1))
+      fi
+    done
+  fi
+
+  # --- Build B1–B7 ---
+  # B1 schema
   local schema_hit=""
   schema_hit="$(find_first "$dir" \
     schema.sql db/schema.sql sql/schema.sql \
@@ -192,193 +222,105 @@ cmd_grade() {
     prisma/schema.prisma \
     backend/src/db/schema.ts src/db/schema.ts \
     migrations docs/schema.md 2>/dev/null || true)"
-  if [[ -z "$schema_hit" ]]; then
-    # any migrations dir or *.sql
-    if [[ -d "$dir/migrations" ]] || [[ -d "$dir/db/migrations" ]] || [[ -d "$dir/backend/migrations" ]]; then
-      schema_hit="migrations/"
-    elif have rg && rg -l --glob '!.git/*' --glob '!node_modules/*' 'CREATE TABLE' "$dir" 2>/dev/null | head -1 | grep -q .; then
-      schema_hit="$(rg -l --glob '!.git/*' --glob '!node_modules/*' 'CREATE TABLE' "$dir" 2>/dev/null | head -1)"
-      schema_hit="$(rel_from "$dir" "$schema_hit")"
-    fi
-  fi
+  if [[ -z "$schema_hit" && -d "$dir/migrations" ]]; then schema_hit="migrations/"; fi
   if [[ -n "$schema_hit" ]]; then
-    row 1 HUMAN "Domain-first schema" "found $schema_hit — confirm names match the business"
+    row B1 HUMAN "Domain-first schema" "found $schema_hit — confirm domain names"
     human=$((human + 1))
   else
-    row 1 HUMAN "Domain-first schema" "no schema/migrations found — still HUMAN if pure lib; else likely fail"
+    row B1 HUMAN "Domain-first schema" "no schema found — N/A only for pure libs"
     human=$((human + 1))
   fi
 
-  # 2 Architecture from load (napkin with units)
-  local napkin=""
-  napkin="$(find_napkin "$dir" || true)"
-  if [[ -n "$napkin" ]] && grep -qE 'QPS|qps|p99|DAU|RPS|rps' "$dir/$napkin" 2>/dev/null \
-    && grep -qE '[0-9]+[[:space:]]*(ms|μs|us|s)\b|\$[0-9]|GB|GiB' "$dir/$napkin" 2>/dev/null \
-    && ! grep -qE '___|TODO fill|Peak QPS: ___' "$dir/$napkin" 2>/dev/null; then
-    row 2 PASS "Architecture from load" "$napkin has numbers + units"
-    auto_pass=$((auto_pass + 1))
-  elif [[ -n "$napkin" ]]; then
-    row 2 FAIL "Architecture from load" "$napkin exists but still placeholders or missing units"
-    auto_fail=$((auto_fail + 1))
-  else
-    row 2 FAIL "Architecture from load" "no docs/napkin.md (run: hm init)"
-    auto_fail=$((auto_fail + 1))
-  fi
-
-  # 3 One path per concern
-  row 3 HUMAN "One path per concern" "grep auth + db access: one way each?"
+  row B2 HUMAN "One path per concern" "confirm one auth + one data path"
   human=$((human + 1))
 
-  # 4 Strict types at boundaries
-  local tsconfig=""
-  tsconfig="$(find_first "$dir" tsconfig.json backend/tsconfig.json frontend/tsconfig.json apps/web/tsconfig.json || true)"
-  local any_count
+  # B3 strict
+  local tsconfig any_count
+  tsconfig="$(find_first "$dir" tsconfig.json backend/tsconfig.json frontend/tsconfig.json || true)"
   any_count="$(as_int "$(rg_count 'as any|: any\b|as unknown as' "$dir" --glob '*.ts' --glob '*.tsx' || true)")"
   if [[ -n "$tsconfig" ]] && grep -qE '"strict"\s*:\s*true' "$dir/$tsconfig" 2>/dev/null; then
     if [[ "$any_count" -gt 0 ]]; then
-      row 4 FAIL "Strict types at boundaries" "$tsconfig strict, but ~$any_count any/cast-through hits (sample/fix may inflate)"
+      row B3 FAIL "Strict types at boundaries" "$tsconfig strict but ~$any_count any/cast hits"
       auto_fail=$((auto_fail + 1))
     else
-      row 4 HUMAN "Strict types at boundaries" "$tsconfig strict, no any hits — still confirm runtime validation on inputs"
+      row B3 HUMAN "Strict types at boundaries" "strict on — confirm runtime validation"
       human=$((human + 1))
     fi
   elif [[ -n "$tsconfig" ]]; then
-    row 4 FAIL "Strict types at boundaries" "$tsconfig without strict: true"
+    row B3 FAIL "Strict types at boundaries" "$tsconfig without strict: true"
     auto_fail=$((auto_fail + 1))
   else
-    row 4 HUMAN "Strict types at boundaries" "no tsconfig — N/A for non-TS? confirm boundary validation"
+    row B3 HUMAN "Strict types at boundaries" "no tsconfig — confirm boundary validation"
     human=$((human + 1))
   fi
 
-  # 5 Secrets never in tree
-  local secret_hits
+  # B4 secrets
+  local secret_hits env_tracked=0
   secret_hits="$(as_int "$(rg_count '(api[_-]?key|secret[_-]?key|private[_-]?key|aws_secret|sk_live|sk_test|ghp_[A-Za-z0-9]{20,}|xox[baprs]-)' "$dir" \
     --glob '!.env*' --glob '!*.example' --glob '!*.md' --glob '!*.svg' || true)")"
-  local env_tracked=0
   if [[ -d "$dir/.git" ]] && have git; then
-    if git -C "$dir" ls-files | grep -qE '(^|/)\.env$'; then
-      env_tracked=1
-    fi
+    if git -C "$dir" ls-files | grep -qE '(^|/)\.env$'; then env_tracked=1; fi
   fi
   if [[ "$env_tracked" -eq 1 ]]; then
-    row 5 FAIL "Secrets never in tree" ".env is tracked by git"
+    row B4 FAIL "Secrets never in tree" ".env is tracked by git"
     auto_fail=$((auto_fail + 1))
   elif [[ "$secret_hits" -gt 0 ]]; then
-    row 5 FAIL "Secrets never in tree" "~$secret_hits secret-shaped strings in source (review false positives)"
+    row B4 FAIL "Secrets never in tree" "~$secret_hits secret-shaped hits"
     auto_fail=$((auto_fail + 1))
   else
-    row 5 HUMAN "Secrets never in tree" "no .env tracked, no obvious secret strings — confirm release audit"
+    row B4 HUMAN "Secrets never in tree" "no obvious leaks — confirm release audit if shipping"
     human=$((human + 1))
   fi
 
-  # 6 Delete is a feature
+  # B5 deps
   local dep_count=0
   if [[ -f "$dir/package.json" ]] && have python3; then
     dep_count="$(as_int "$(python3 - <<PY
 import json
 p=json.load(open("$dir/package.json"))
-d=len(p.get("dependencies") or {})
-e=len(p.get("devDependencies") or {})
-print(d+e)
+print(len(p.get("dependencies") or {})+len(p.get("devDependencies") or {}))
 PY
 )")"
   fi
   if [[ "$dep_count" -gt 80 ]]; then
-    row 6 FAIL "Delete is a feature" "package.json has $dep_count deps (likely bloat; justify or cut)"
+    row B5 FAIL "Delete is a feature" "$dep_count package.json deps"
     auto_fail=$((auto_fail + 1))
-  elif [[ "$dep_count" -gt 0 ]]; then
-    row 6 HUMAN "Delete is a feature" "$dep_count package.json deps — still hunt dead code/flags"
-    human=$((human + 1))
   else
-    row 6 HUMAN "Delete is a feature" "no package.json or zero deps — confirm no dead weight"
+    row B5 HUMAN "Delete is a feature" "${dep_count:-0} deps — still hunt dead code"
     human=$((human + 1))
   fi
 
-  # 7 Observable defaults
-  local obs=""
-  obs="$(find_first "$dir" \
-    src/lib/errors.ts backend/src/lib/errors.ts src/errors.ts \
-    src/middleware/error.ts backend/src/middleware/error.ts || true)"
+  local obs
+  obs="$(find_first "$dir" src/lib/errors.ts backend/src/lib/errors.ts src/errors.ts || true)"
   if [[ -n "$obs" ]]; then
-    row 7 HUMAN "Observable defaults" "found $obs — confirm user-safe map + ops can diagnose"
-    human=$((human + 1))
+    row B6 HUMAN "Observable defaults" "found $obs"
   else
-    row 7 HUMAN "Observable defaults" "no obvious error module — confirm one error path"
-    human=$((human + 1))
+    row B6 HUMAN "Observable defaults" "confirm one error path"
   fi
+  human=$((human + 1))
 
-  # 8 Cost transparent
-  if [[ -n "$napkin" ]] && grep -qE '\$|USD|/mo|month' "$dir/$napkin" 2>/dev/null \
-    && ! grep -qE 'Monthly cost ceiling: \\\$___|Monthly cost ceiling: \$___' "$dir/$napkin" 2>/dev/null; then
-    # filled if has dollar amounts that aren't only placeholders
-    if grep -qE '\$[0-9]' "$dir/$napkin" 2>/dev/null; then
-      row 8 PASS "Cost transparent" "$napkin has \$ figures"
-      auto_pass=$((auto_pass + 1))
-    else
-      row 8 FAIL "Cost transparent" "$napkin mentions cost but no \$ amounts"
-      auto_fail=$((auto_fail + 1))
-    fi
-  else
-    row 8 FAIL "Cost transparent" "no monthly cost napkin with \$ amounts"
-    auto_fail=$((auto_fail + 1))
-  fi
-
-  # 9 Perf budget
-  local has_budget=0
-  if [[ -n "$napkin" ]] && grep -qiE 'budget|p99|TTFB|bundle' "$dir/$napkin" 2>/dev/null \
-    && grep -qE '[0-9]+[[:space:]]*ms' "$dir/$napkin" 2>/dev/null \
-    && ! grep -qE 'Critical path p99: ___' "$dir/$napkin" 2>/dev/null; then
-    has_budget=1
-  fi
-  local has_check=0
-  if [[ -d "$dir/.github/workflows" ]] || [[ -f "$dir/vitest.config.ts" ]] || [[ -f "$dir/playwright.config.ts" ]]; then
-    has_check=1
-  fi
-  if [[ "$has_budget" -eq 1 && "$has_check" -eq 1 ]]; then
-    row 9 HUMAN "Perf budget written + checked" "budgets in $napkin + CI/test config present — confirm they enforce"
-    human=$((human + 1))
-  elif [[ "$has_budget" -eq 1 ]]; then
-    row 9 FAIL "Perf budget written + checked" "budgets written but no CI/test harness found"
-    auto_fail=$((auto_fail + 1))
-  else
-    row 9 FAIL "Perf budget written + checked" "no numeric perf budget in napkin"
-    auto_fail=$((auto_fail + 1))
-  fi
-
-  # 10 No cargo cult
-  local just=""
-  just="$(find_first "$dir" DEPENDENCIES.md docs/dependencies.md docs/deps.md ADR.md docs/adr README.md || true)"
-  if [[ -n "$just" ]] && grep -qiE 'why we|we use|justif|chose|because' "$dir/$just" 2>/dev/null; then
-    row 10 HUMAN "No cargo cult" "justification language in $just — confirm every heavy dep earns a line"
-    human=$((human + 1))
-  else
-    row 10 HUMAN "No cargo cult" "no deps justification doc — each non-trivial dep needs a one-liner why"
-    human=$((human + 1))
-  fi
+  row B7 HUMAN "No cargo cult" "each heavy dep needs a one-line why"
+  human=$((human + 1))
 
   echo ""
   echo "summary"
   echo "  auto PASS: $auto_pass"
   echo "  auto FAIL: $auto_fail"
-  echo "  HUMAN:     $human  (fill evidence in HON-MAGURO-CHECKLIST.md)"
+  echo "  HUMAN:     $human"
   echo ""
 
-  # Binary only: Hon Maguro or Fail.
   local verdict="FAIL"
   if [[ "$auto_fail" -eq 0 && "$human" -eq 0 ]]; then
     verdict="HON MAGURO"
   elif [[ "$auto_fail" -eq 0 ]]; then
-    verdict="FAIL (HUMAN rows open — complete checklist or it stays fail)"
+    verdict="FAIL (HUMAN rows open)"
   else
     verdict="FAIL ($auto_fail auto fail(s))"
   fi
 
   echo "verdict: $verdict"
-  echo ""
-  echo "rules: binary — Hon Maguro or Fail. No middle tiers."
-  echo "       auto FAIL and open HUMAN both block Hon Maguro."
+  echo "rules:   binary — Hon Maguro or Fail. Napkin fields are standards."
 
-  # write machine-readable report
   local out="$dir/HON-MAGURO-REPORT.md"
   {
     echo "# Hon Maguro report — $project"
@@ -388,12 +330,10 @@ PY
     echo "- **Verdict:** $verdict"
     echo "- **Auto PASS / FAIL / HUMAN:** $auto_pass / $auto_fail / $human"
     echo ""
-    echo "Re-run: \`hm grade .\` from hon-maguro. This file is signals, not a grade claim."
+    echo "Napkin standards N1–N15 are first-class. Signals only — not a grade claim."
   } >"$out"
   echo "wrote $out"
 }
-
-# --- main ---
 
 cmd="${1:-help}"
 shift || true
