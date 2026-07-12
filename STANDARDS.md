@@ -22,7 +22,7 @@ Agents: how to meet without gaming → [MEET.md](./MEET.md).
 
 | # | Standard |
 |---|----------|
-| **T1** | Named scoreboard green (a11y / typecheck / doctor / lighthouse / etc.) + threshold |
+| **T1** | Product UI: automated a11y scan (**axe** or equiv.) → **0** serious/critical on main flows; **N/A** if no UI |
 
 ## Docs / onboarding
 
