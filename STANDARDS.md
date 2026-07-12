@@ -22,7 +22,9 @@ Agents: how to meet without gaming → [MEET.md](./MEET.md).
 
 | # | Standard |
 |---|----------|
-| **T1** | Product UI: automated a11y scan (**axe** or equiv.) → **0** serious/critical on main flows; **N/A** if no UI |
+| **T1** | Main product page(s): **Lighthouse Performance = 100** (named URL + run); **N/A** if no web UI |
+| **T2** | Every production React app: **React Doctor 100/100** (fresh verbose run); **N/A** if no React |
+| **T3** | Docs + README: **0** broken links (**lychee** / linkinator or equiv.) |
 
 ## Docs / onboarding
 
@@ -65,6 +67,8 @@ Agents: how to meet without gaming → [MEET.md](./MEET.md).
 - **300 ms p99** — interactive API bar  
 - **100 ms query** — keeps the API budget honest  
 - **200 KiB gzip** — main-path perceived perf  
+- **Lighthouse Perf 100** — fixed web scoreboard  
+- **React Doctor 100** — fixed React scoreboard  
 - **≤6 assumptions** — more → restart the plan  
 - Cost: order-of-magnitude USD OK; blank not OK  
 

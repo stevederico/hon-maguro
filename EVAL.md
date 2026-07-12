@@ -15,6 +15,8 @@ Bars: [STANDARDS.md](./STANDARDS.md). Empty evidence = fail.
 | P4 | ☐ | |
 | Q1 | ☐ | |
 | T1 | ☐ | |
+| T2 | ☐ | |
+| T3 | ☐ | |
 | D1 | ☐ | |
 | C1 | ☐ | |
 | C2 | ☐ | |
