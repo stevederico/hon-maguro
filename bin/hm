@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.10.0"
+VERSION="0.11.0"
 
 BAR_P99_MS=300
 BAR_QUERY_MS=100
@@ -18,7 +18,8 @@ usage() {
 hm v$VERSION — Hon Maguro eval
 
   hm init [path]   Drop HON-MAGURO-EVAL.md
-  hm eval [path]   Eval against standards (auto: strict, secrets, deps)
+  hm links [path]  Check markdown links (T3; curl only — no install)
+  hm eval [path]   Eval against standards (auto: strict, secrets, deps, links)
   hm help
 EOF
 }
@@ -89,6 +90,65 @@ cmd_init() {
   echo "fill evidence, then: hm eval $dir"
 }
 
+# Extract ](target) from markdown; print "file<TAB>target"
+md_link_pairs() {
+  local dir="$1" f target
+  while IFS= read -r -d '' f; do
+    grep -oE '\]\([^)]+\)' "$f" 2>/dev/null | sed 's/^](//;s/)$//' | while IFS= read -r target; do
+      [[ -z "$target" || "$target" == \#* || "$target" == mailto:* ]] && continue
+      printf '%s\t%s\n' "$f" "$target"
+    done
+  done < <(find "$dir" \( -path '*/.git/*' -o -path '*/node_modules/*' -o -path '*/dist/*' \) -prune \
+    -o -name '*.md' -print0 2>/dev/null)
+}
+
+# Returns broken count on stdout; lists broken on stderr. 0 = pass.
+check_links() {
+  local dir="$1"
+  local broken=0 total=0 code path base target file
+  have curl || die "curl required for hm links (preinstalled on macOS/Linux)"
+
+  while IFS=$'\t' read -r file target; do
+    [[ -z "${target:-}" ]] && continue
+    total=$((total + 1))
+    if [[ "$target" =~ ^https?:// ]]; then
+      code="$(curl -sS -o /dev/null -w '%{http_code}' -L --max-time 12 \
+        -A 'hm-links/0.11' "$target" 2>/dev/null || echo 000)"
+      if [[ ! "$code" =~ ^[23][0-9][0-9]$ ]]; then
+        echo "BROKEN  $code  $target  ($file)" >&2
+        broken=$((broken + 1))
+      fi
+    else
+      # strip query/hash for local paths
+      path="${target%%[?#]*}"
+      [[ -z "$path" ]] && continue
+      base="$(dirname "$file")"
+      if [[ -e "$base/$path" || -e "$dir/$path" ]]; then
+        :
+      else
+        echo "BROKEN  missing  $target  ($file)" >&2
+        broken=$((broken + 1))
+      fi
+    fi
+  done < <(md_link_pairs "$dir" | sort -u)
+
+  echo "links checked=$total broken=$broken" >&2
+  echo "$broken"
+}
+
+cmd_links() {
+  local dir="${1:-.}"
+  dir="$(cd "$dir" && pwd)"
+  local broken
+  broken="$(check_links "$dir")"
+  if [[ "$broken" -eq 0 ]]; then
+    echo "T3 PASS  broken=0"
+    return 0
+  fi
+  echo "T3 FAIL  broken=$broken"
+  return 1
+}
+
 cmd_eval() {
   local dir="${1:-.}"
   dir="$(cd "$dir" && pwd)"
@@ -103,9 +163,9 @@ cmd_eval() {
   echo ""
   echo "  id  auto  note"
 
-  # Human-owned (C3, R1, R2 auto below)
+  # Human-owned (C3, R1, R2, T3 auto below)
   local id
-  local human_ids=(P1 P2 P3 P4 Q1 T1 T2 T3 D1 C1 C2 C4 R3 R4 O1 O2 O3 O4 O5 O6)
+  local human_ids=(P1 P2 P3 P4 Q1 T1 T2 D1 C1 C2 C4 R3 R4 O1 O2 O3 O4 O5 O6)
   if [[ -z "$cl" ]]; then
     for id in "${human_ids[@]}"; do
       row "$id" FAIL "no eval form"
@@ -144,6 +204,18 @@ cmd_eval() {
         human=$((human + 1))
       fi
     done
+  fi
+
+  # T3 auto: markdown links (hm links)
+  local link_broken
+  link_broken="$(check_links "$dir" 2>/dev/null || echo 1)"
+  link_broken="$(as_int "$link_broken")"
+  if [[ "$link_broken" -eq 0 ]]; then
+    row T3 PASS "hm links broken=0"
+    pass=$((pass + 1))
+  else
+    row T3 FAIL "hm links broken=$link_broken — run: hm links $dir"
+    fail=$((fail + 1))
   fi
 
   # C3 auto: strict + any
@@ -240,6 +312,7 @@ cmd="${1:-help}"
 shift || true
 case "$cmd" in
   init) cmd_init "${1:-.}" ;;
+  links) cmd_links "${1:-.}" ;;
   eval) cmd_eval "${1:-.}" ;;
   help|-h|--help) usage ;;
   version|-v|--version) echo "hm $VERSION" ;;

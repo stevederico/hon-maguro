@@ -12,6 +12,7 @@ Meet every standard → **Hon Maguro**. Miss any → **Fail**.
 
 ```bash
 ./bin/hm init ~/path/to/project
+./bin/hm links ~/path/to/project   # T3 — no extra install
 ./bin/hm eval ~/path/to/project
 ```
 

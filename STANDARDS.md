@@ -25,7 +25,7 @@ Agents: [MEET.md](./MEET.md).
 |---|--------|---------|
 | **T1** | Lighthouse Performance (named URL) | score **= 100**; **N/A** if no web UI |
 | **T2** | React Doctor (each prod React app) | score **= 100/100**; **N/A** if no React |
-| **T3** | Link check (docs + README) | broken links **= 0** |
+| **T3** | Link check (docs + README) | broken **= 0** via **`hm links`** (built-in; no extra install) |
 
 ## Docs / onboarding
 
