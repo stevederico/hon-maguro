@@ -1,5 +1,7 @@
 # Hon Maguro
 
+![Golden tuna banner](./assets/banner.jpg)
+
 **true tuna standards for software**
 
 | | |
