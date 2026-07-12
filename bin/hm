@@ -63,7 +63,7 @@ find_first() {
   return 1
 }
 
-find_eval form() {
+find_eval() {
   local dir="$1" f
   for f in HON-MAGURO-EVAL.md docs/HON-MAGURO-EVAL.md; do
     [[ -f "$dir/$f" ]] && { echo "$f"; return 0; }
@@ -141,7 +141,7 @@ cmd_eval() {
   dir="$(cd "$dir" && pwd)"
   local project cl=""
   project="$(basename "$dir")"
-  cl="$(find_eval form "$dir" || true)"
+  cl="$(find_eval "$dir" || true)"
 
   local auto_fail=0 human=0 auto_pass=0
 
