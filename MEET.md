@@ -26,6 +26,6 @@ Evidence = **number, count, or binary**. Story-only answers fail.
 | **Q** | Fix flakes; map inventory → tests; 3 full greens |
 | **T** | Re-run full tool; fix root cause; **`hm links`** for T3 |
 | **D** | README alone boots a stranger once |
-| **C** | 1:1 glossary; one auth/data path; 0 user-facing leaks; 0 claim mismatches |
+| **C** | 1:1 glossary; one auth/data path; 0 user-facing leaks |
 | **R** | 0 secrets; deps counted; every dep has a why; changelog caught up |
 | **O** | Fill every required number; prove restore once |

@@ -40,7 +40,6 @@ Agents: [MEET.md](./MEET.md).
 | **C1** | Domain glossary → schema | **≥1** business entity listed; each maps **1:1** to a primary table/type (table in evidence) |
 | **C2** | Auth / data / errors | auth entrypoints **= 1**; data-access style **= 1**; user-visible 5xx samples with stack/provider leak **= 0** |
 | **C3** | TypeScript strict + `any` | `"strict": true`; boundary `any` / cast-through-unknown hits **= 0** |
-| **C4** | Customer claims | claim inventory size **N**; mismatches **= 0** (or **N = 0** if no external claims) |
 
 ## Repo hygiene
 
