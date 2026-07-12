@@ -27,6 +27,17 @@ The standards borrow the discipline of Japan's best manufacturers — build qual
 - **Complexity kills** (Toyota's unintended-acceleration firmware: 67 functions >50 cyclomatic) → keep functions small and testable.
 - **Zero-defect gate** (MISRA: 0 mandatory violations) → binary pass/fail, exceptions only with a documented deviation.
 
+### Companies studied
+
+| Company | What they set | Status here |
+|--|--|--|
+| **Toyota** | Jidoka, poka-yoke, kaizen; killer-firmware complexity (67 fns >50 cyclomatic) | Baked into the standards + binary Fail |
+| **MISRA** (auto industry) | 0 mandatory violations; deviations documented | = our binary pass/fail |
+| **Mercari** | SLO 99.95% success + p95 ≤ 350 ms | LATER — needs prod telemetry ([todo.md](./todo.md)) |
+| **Honda / Six Sigma** | ≤ 3.4 defects per 1M (or ≤ 50 PPM at customer) | LATER — needs prod telemetry |
+| **Nintendo** | Lot Check: 1 major or 3 minor failures → stop, resubmit | Process/CI gate, not a repo bar |
+| **Sony, Panasonic, Hitachi, NTT, Rakuten, LINE, Preferred Networks** | No public numeric software bars found | Studied, nothing adoptable |
+
 Inspired by [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math).
 
 MIT — [LICENSE](./LICENSE)
