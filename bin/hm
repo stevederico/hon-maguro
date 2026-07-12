@@ -18,7 +18,7 @@ hm — Hon Maguro scorecard tool
   hm help           This help
 
 Auto checks are signals only. HUMAN rows need a person + evidence.
-All 10 pass (auto + human) → Hon Maguro. Any fail → not.
+All 10 pass → Hon Maguro. Anything else → Fail. No middle grades.
 EOF
 }
 
@@ -363,21 +363,20 @@ PY
   echo "  HUMAN:     $human  (fill evidence in HON-MAGURO-CHECKLIST.md)"
   echo ""
 
-  local verdict="GROUND"
+  # Binary only: Hon Maguro or Fail.
+  local verdict="FAIL"
   if [[ "$auto_fail" -eq 0 && "$human" -eq 0 ]]; then
     verdict="HON MAGURO"
   elif [[ "$auto_fail" -eq 0 ]]; then
-    verdict="PENDING HUMAN (no auto fails — not Hon Maguro until HUMAN rows pass)"
-  elif [[ "$auto_fail" -le 3 ]]; then
-    verdict="EXPORT GRADE (auto fails present)"
+    verdict="FAIL (HUMAN rows open — complete checklist or it stays fail)"
   else
-    verdict="GROUND (many auto fails)"
+    verdict="FAIL ($auto_fail auto fail(s))"
   fi
 
   echo "verdict: $verdict"
   echo ""
-  echo "rules: auto FAIL blocks Hon Maguro. HUMAN rows never auto-pass."
-  echo "       claim Hon Maguro only with filled checklist + zero fails."
+  echo "rules: binary — Hon Maguro or Fail. No middle tiers."
+  echo "       auto FAIL and open HUMAN both block Hon Maguro."
 
   # write machine-readable report
   local out="$dir/HON-MAGURO-REPORT.md"

@@ -2,9 +2,9 @@
 
 **true tuna standards for software**
 
-At Toyosu, the best bluefin never leaves Japan — only fish that clear the top cut reach *jōmonoshi* buyers. Everything else is exported, canned, or ground.
+At Toyosu, only fish that clear the top cut are *hon-maguro*. Everything else is simply not.
 
-**Hon Maguro** is that cut for software: first principles and pass/fail standards. If it fails a standard, it is not high-end. No grade inflation.
+**Hon Maguro** is that cut for software: first principles and a binary scorecard. Pass every standard or **fail**. No middle grades.
 
 Inspired by [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math) (estimate before you build) and the Toyosu tuna auction (ruthless grading).
 
@@ -45,16 +45,14 @@ Scannable audit form: [CHECKLIST.md](./CHECKLIST.md)
 
 ---
 
-## Grades (tuna market metaphor)
+## Binary grade
 
-| Grade | Meaning | Software |
-|-------|---------|----------|
-| **Hon Maguro** | True tuna — top domestic cut | Passes all standards above |
-| **Chūtoro / otoro quality** | Premium parts of the same fish | Hon Maguro + exceptional craft (docs, a11y, ops polish) |
-| **Export grade** | Leaves the country | Ships, works, but fails 1+ standards (bloat, schema drift, no napkin) |
-| **Ground / canned** | Processed | Framework demo energy, unmeasured cost, dual systems, secrets risk |
+| Result | Meaning |
+|--------|---------|
+| **Hon Maguro** | All 10 standards pass with evidence |
+| **Fail** | Anything else — no middle tiers |
 
-Most software is export grade. That is fine for experiments. Do not call it Hon Maguro.
+No export. No ground. No partial credit.
 
 ---
 
@@ -77,7 +75,7 @@ Optional: `ln -s "$(pwd)/bin/hm" /usr/local/bin/hm`
 | `hm init [path]` | Writes `HON-MAGURO-CHECKLIST.md` + `docs/napkin.md` |
 | `hm grade [path]` | Auto PASS/FAIL/HUMAN per standard; honest verdict |
 
-`grade` can auto-**fail** (missing napkin, tracked `.env`, `strict` off, etc.). It never auto-awards **Hon Maguro** — only `PENDING HUMAN` when autos are clean.
+`grade` can auto-**fail** (missing napkin, tracked `.env`, `strict` off, etc.). It never auto-awards **Hon Maguro** — incomplete HUMAN rows = **fail** until you pass them.
 
 ### Manual
 

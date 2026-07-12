@@ -3,7 +3,7 @@
 **Project:**  
 **Date:**  
 **Reviewer:**  
-**Verdict:** ☐ Hon Maguro · ☐ Export grade · ☐ Ground
+**Verdict:** ☐ Hon Maguro · ☐ Fail
 
 Evidence = path, link, or short note. Empty evidence = fail.
 
@@ -22,7 +22,7 @@ Evidence = path, link, or short note. Empty evidence = fail.
 
 **Rules**
 - All 10 pass → **Hon Maguro**
-- Any fail → **not** Hon Maguro (say Export or Ground; do not inflate)
+- Any fail → **Fail** (no middle grades)
 - "N/A" only if the concern truly does not exist (e.g. no network secrets in a pure lib) — write why
 
 ## Napkin stub (paste into evidence for #2 / #8 / #9)
