@@ -5,43 +5,42 @@
 **Reviewer:**  
 **Verdict:** ☐ Hon Maguro · ☐ Fail
 
-Empty value = fail. Units required (ms, QPS, $, GB).
+Standards are **hardcoded** below. You do not invent the bar.  
+Evidence = path or note proving you meet that bar. Empty evidence = fail.
 
-## Napkin standards (required numbers)
+## Napkin standards
 
-These *are* the standard — not optional notes.
-
-| # | Standard | Value | Pass? |
-|---|----------|-------|-------|
-| N1 | Peak QPS (or equiv. load) | ___ | ☐ |
-| N2 | Steady load (QPS or DAU) | ___ | ☐ |
-| N3 | Critical path p99 | ___ ms | ☐ |
-| N4 | Data now → growth | ___ GB → ___ GB/mo | ☐ |
-| N5 | Failure mode (primary dies →) | ___ | ☐ |
-| N6 | Monthly cost ceiling | $___ | ☐ |
-| N7 | Cost: CPU/mem | $___ /mo | ☐ |
-| N8 | Cost: storage | $___ /mo | ☐ |
-| N9 | Cost: egress | $___ /mo | ☐ |
-| N10 | Cost: third-party | $___ /mo | ☐ |
-| N11 | Perf budget: API p99 | ___ ms | ☐ |
-| N12 | Perf budget: key query | ___ ms | ☐ |
-| N13 | Perf budget: client/bundle | ___ | ☐ |
-| N14 | How budgets are checked | ___ | ☐ |
-| N15 | Assumptions listed (≤6) | ___ | ☐ |
+| # | Standard (fixed bar) | Pass? | Evidence |
+|---|----------------------|-------|----------|
+| N1 | Peak load written as a **number + unit** (QPS, RPS, or DAU×actions) | ☐ | |
+| N2 | Steady load written as a **number + unit** | ☐ | |
+| N3 | Critical path **p99 ≤ 300 ms** (or shorter); write the number in ms | ☐ | |
+| N4 | Data size **now + monthly growth** with units (GB or row count) | ☐ | |
+| N5 | Failure mode: one sentence — primary dies → what happens | ☐ | |
+| N6 | Monthly **cost ceiling in USD** written | ☐ | |
+| N7 | CPU/mem cost line in **$/mo** | ☐ | |
+| N8 | Storage cost line in **$/mo** | ☐ | |
+| N9 | Egress cost line in **$/mo** | ☐ | |
+| N10 | Third-party cost line in **$/mo** | ☐ | |
+| N11 | API p99 budget **≤ 300 ms** and written | ☐ | |
+| N12 | Key query budget **≤ 100 ms** and written | ☐ | |
+| N13 | Client budget written (JS **≤ 200 KiB** gzip main path, or named exception) | ☐ | |
+| N14 | Budgets enforced by **CI or a named script** (not vibes) | ☐ | |
+| N15 | Design assumptions listed and **count ≤ 6** | ☐ | |
 
 ## Build standards
 
-| # | Standard | Pass? | Evidence (path / note) |
-|---|----------|-------|------------------------|
-| B1 | Domain-first schema | ☐ | |
-| B2 | One path per concern | ☐ | |
-| B3 | Strict types at boundaries | ☐ | |
-| B4 | Secrets never in tree | ☐ | |
-| B5 | Delete is a feature | ☐ | |
-| B6 | Observable defaults | ☐ | |
-| B7 | No cargo cult (deps justified) | ☐ | |
+| # | Standard (fixed bar) | Pass? | Evidence |
+|---|----------------------|-------|----------|
+| B1 | Domain-first schema: tables/entities named for the business | ☐ | |
+| B2 | Exactly **one** path each for auth, data access, errors | ☐ | |
+| B3 | TypeScript **`strict: true`** (or equivalent); no `any` / cast-through-unknown at boundaries | ☐ | |
+| B4 | **Zero** secrets in git; no tracked `.env` | ☐ | |
+| B5 | No dead weight; package deps (prod+dev) **≤ 40** unless each extra has a one-line why | ☐ | |
+| B6 | One error path: user-safe message + ops can diagnose | ☐ | |
+| B7 | Every non-trivial dependency has a **one-line why** | ☐ | |
 
 **Rules**
-- Every N* and B* row pass → **Hon Maguro**
-- Any fail or blank → **Fail**
-- "N/A" only if the concern cannot exist — write why in Value/Evidence
+- Meet every hardcoded bar → **Hon Maguro**
+- Miss any → **Fail**
+- Exception only with evidence that names the bar and why (still usually Fail unless reviewer accepts N/A)
