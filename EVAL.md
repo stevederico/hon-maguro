@@ -17,14 +17,12 @@ Bars: [STANDARDS.md](./STANDARDS.md). Empty evidence = fail.
 | N6 | ☐ | |
 | N7 | ☐ | |
 | N8 | ☐ | |
-| N9 | ☐ | |
 | B1 | ☐ | |
 | B2 | ☐ | |
 | B3 | ☐ | |
 | B4 | ☐ | |
 | B5 | ☐ | |
 | B6 | ☐ | |
-| B7 | ☐ | |
 | S1 | ☐ | |
 | S2 | ☐ | |
 | S3 | ☐ | |
@@ -32,4 +30,3 @@ Bars: [STANDARDS.md](./STANDARDS.md). Empty evidence = fail.
 | S5 | ☐ | |
 | S6 | ☐ | |
 | S7 | ☐ | |
-| S8 | ☐ | |
