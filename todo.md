@@ -1,5 +1,7 @@
 # To-Do
 
+- [ ] Open-source this: make repo public + add MIT LICENSE
+
 ## Later — production telemetry (runtime SLOs)
 
 These need live prod metrics (Datadog/Prometheus), not a static clone. Integrate if `hm` ever ingests a telemetry source.
