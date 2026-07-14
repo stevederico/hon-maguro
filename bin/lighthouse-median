@@ -2,12 +2,12 @@
 # Lighthouse median-of-3 runner for the Hon Maguro SCORE1 bar.
 # Runs `npx lighthouse` 3x (no dep added), reports the median score per
 # category, and passes only when the Performance median = 100.
-# Usage: lighthouse-median.sh <url> [runs]
+# Usage: lighthouse-median <url> [runs]
 set -euo pipefail
 
 URL="${1:-}"
 RUNS="${2:-3}"
-[[ -n "$URL" ]] || { echo "usage: lighthouse-median.sh <url> [runs]" >&2; exit 2; }
+[[ -n "$URL" ]] || { echo "usage: lighthouse-median <url> [runs]" >&2; exit 2; }
 command -v npx >/dev/null 2>&1 || { echo "error: npx required (comes with Node)" >&2; exit 2; }
 
 TMP="$(mktemp -d)"

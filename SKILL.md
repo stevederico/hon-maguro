@@ -1,57 +1,107 @@
 ---
 name: hon-maguro
 description: >
-  Evaluate any project against the fixed "Hon Maguro" software quality bars via the bundled bin/maguro CLI. Auto-checks TypeScript strict/`any`, secrets in git, dependency count, and markdown links; scores the rest from a filled-in EVAL form. Use when the user says "eval this project", "hon maguro", "quality bar check", "is this project ready", "audit code quality", or wants a pass/fail quality verdict against fixed standards.
+  Evaluate any project against fixed "Hon Maguro" quality bars via bin/maguro (init/links/eval), run Lighthouse median-of-3 for SCORE1, and optionally a capped fix loop (max 2 rounds). Binary pass/fail — no partial credit. Use when the user says "eval this project", "hon maguro", "quality bar check", "is this project ready", "audit code quality", "lighthouse", "pagespeed", "fix until pass", "inspect and fix", or wants a pass/fail quality verdict against fixed standards.
 ---
 
 # hon-maguro
 
-Binary quality gate: a project either meets every fixed bar (**HON MAGURO**) or it **Fails**. No partial credit. Bars are defined in `STANDARDS.md`; agent anti-gaming rules in `MEET.md`.
+Binary quality gate: a project either meets every fixed bar (**HON MAGURO**) or it **Fails**. No partial credit. Bars → `STANDARDS.md`. Anti-gaming → `MEET.md`.
 
-`bin/maguro` is a self-contained Bash CLI (no deps beyond curl + python3, both preinstalled on macOS/Linux). Invoke it with the repo path of the project under review.
+`bin/maguro` is a self-contained Bash CLI (curl + python3 only). Scripts live next to this skill when installed from the repo.
 
 ## Invoke
 
 ```bash
 bin/maguro eval  <path>   # full eval — writes HON-MAGURO-EVAL-REPORT.md
-bin/maguro init  <path>   # drop a blank HON-MAGURO-EVAL.md form to fill with evidence
-bin/maguro links <path>   # SCORE3 only — check markdown links (curl, no install)
+bin/maguro init  <path>   # drop blank HON-MAGURO-EVAL.md
+bin/maguro links <path>   # SCORE3 only (curl, no install)
 bin/maguro help
+
+bin/lighthouse-median <url> [runs]   # SCORE1: Performance median of 3 (=100 to pass)
 ```
 
 Typical flow:
-1. `bin/maguro init <path>` — writes `HON-MAGURO-EVAL.md` (a table of bar IDs + empty evidence cells).
-2. Fill each evidence cell with a **number, count, or binary** (never prose — vague prose = fail). See `EVAL.md` for the form and `STANDARDS.md` for what each bar requires.
-3. `bin/maguro eval <path>` — prints a per-bar table and a verdict, and writes `HON-MAGURO-EVAL-REPORT.md`.
+1. `bin/maguro init <path>` — blank EVAL form (bar IDs + evidence cells).
+2. Fill each evidence cell with a **number, count, or binary** (never prose).
+3. For web UIs: `bin/lighthouse-median <url>` → paste Performance median into `SCORE1`.
+4. `bin/maguro eval <path>` — per-bar table + verdict + fail tips.
 
 ## What `eval` checks
 
-- **Auto (maguro decides pass/fail):**
-  - `CODE3` — `tsconfig` has `"strict": true` and 0 `any`/cast-through-unknown hits.
-  - `REPO1` — no tracked `.env`, no secret-shaped strings.
-  - `REPO2` — prod+dev deps ≤ 20 (over 20 needs justification in evidence).
-  - `SCORE3` — 0 broken markdown links (same as `maguro links`).
-- **HUMAN (evidence must be present; agent confirms against STANDARDS.md):** SPEED1–5, TEST1, SCORE1, SCORE2, DOCS1, CODE1, CODE2, REPO3, OPS1–6. `maguro` verifies the evidence cell is non-empty and range-checks `ms` values for SPEED1/3/4; you must confirm the rest.
+- **Auto:** `CODE3` (strict + 0 `any`), `REPO1` (secrets), `REPO2` (deps ≤20), `SCORE3` (links).
+- **HUMAN (evidence required):** SPEED1–5, TEST1, SCORE1, SCORE2, DOCS1, CODE1, CODE2, REPO3, OPS1–6. Confirm against STANDARDS.md.
 
 ## Reading the output
 
-- Per-row status: `PASS` / `FAIL` / `HUMAN`.
-- `summary  PASS=.. FAIL=.. HUMAN=..`
-- `result:` is `HON MAGURO` only when FAIL=0 **and** HUMAN=0. Any open HUMAN row or any FAIL = overall Fail.
-- On any FAIL, `maguro` prints a **how to pass:** block (one tip per failed bar) and copies it into `HON-MAGURO-EVAL-REPORT.md`.
-- Resolve every `HUMAN` row by reading the evidence and checking it against the matching bar in `STANDARDS.md`, then report which bars truly pass.
+- Status: `PASS` / `FAIL` / `HUMAN`.
+- `result: HON MAGURO` only when FAIL=0 **and** HUMAN=0.
+- On FAIL: **how to pass:** tips (also in `HON-MAGURO-EVAL-REPORT.md`).
 
-## Bars that need external runners
+## SCORE1 — Lighthouse
 
-- `SCORE1` (Lighthouse Performance median of 3 = 100) has no runner inside `maguro`. Use the **lighthouse** skill (`skills/lighthouse/`) to produce the number, then paste it into the `SCORE1` evidence cell.
-- `SCORE2` (React Doctor = 100) and the SPEED/TEST/OPS bars are measured by you with the project's own tooling; record the number as evidence.
+Bar: **Performance median of 3 runs = 100** (N/A if no web UI).
 
-## Inspect → fix (capped)
+```bash
+bin/lighthouse-median https://localhost:3000
+bin/lighthouse-median https://myapp.com 3
+```
 
-To improve a project toward the gate (not open-ended until green), use the **fix-rounds** skill (`skills/fix-rounds/`): baseline `maguro eval` → fix real FAILs → re-eval, **max 2 fix rounds**. Stops on HUMAN / need measure; never games the meter.
+- Shells out to `npx lighthouse` (no package.json dep); needs Node + Chrome; median via `python3`.
+- Paste e.g. `Lighthouse perf median=100 (3 runs) — https://myapp.com` into SCORE1 evidence.
+- Real product URL only; fix root cause — never suppress audits.
 
-## Rules (from MEET.md)
+## Inspect → fix (capped, max 2 rounds)
 
-- Measure the same path users take — no secret eval mode.
-- Fix the product, not the meter. Never suppress a tool to fake 100.
-- A named exception + measured number beats a fake pass.
+Not open-ended. Infinite "until green" invites cheating the meter.
+
+```bash
+bin/maguro init  <path>   # if needed
+bin/maguro eval  <path>   # round 0 baseline
+# fix real FAILs (product, not meter)
+bin/maguro eval  <path>   # round 1
+# optional second fix
+bin/maguro eval  <path>   # round 2 — last
+```
+
+**Stop when:** HON MAGURO · 2 fix cycles done · remaining is HUMAN/measure · only MEET-violating options left.
+
+### Allowed fixes (product, not meter)
+
+| FAIL | Honest fix |
+|--|--|
+| **CODE3** | `"strict": true`; replace `any` / `as unknown as` with `unknown` + narrowing |
+| **REPO1** | Untrack `.env`; remove secret-shaped strings; rotate if real |
+| **REPO2** | Drop unused deps; or one-line why for each past 20 in EVAL |
+| **SCORE3** | Fix broken links (`maguro links`) |
+| **TEST1** | Fix failures/flakes; add flow tests — never delete tests to go green |
+| **DOCS1** | README alone boots a stranger (commands exit 0) |
+| **CODE1/2** | Glossary↔schema 1:1; one auth path; 0 user-facing stack leaks |
+| **SPEED\*** | Prefetch first; then real perf — measure every product URL |
+| **SCORE1** | `bin/lighthouse-median`; fix root cause to median 100 |
+| **SCORE2** | Fix React Doctor findings — don't disable rules |
+| **OPS\*** | Real napkin/prod numbers; prove restore once |
+
+### Forbidden (MEET)
+
+- Secret eval mode / cherry-picked routes
+- Suppress Lighthouse/Doctor/lint/tests to fake 100
+- `@ts-ignore`, blanket `any`, delete tests, fake N/A
+- Invent SPEED/OPS/Lighthouse numbers
+- Loop past 2 fix rounds
+
+### Report after fix rounds
+
+```
+rounds: <n>/2
+result: HON MAGURO | FAIL
+fixed: <bar ids>
+still open: <FAIL + HUMAN needing measure>
+next human step: <one line or none>
+```
+
+## Rules (MEET.md)
+
+- Same path users take.
+- Fix the product, not the meter.
+- Named exception + measured number beats a fake pass.

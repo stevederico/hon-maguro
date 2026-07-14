@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.15.0"
+VERSION="0.16.0"
 
 BAR_P99_MS=300
 BAR_QUERY_MS=100
@@ -80,7 +80,7 @@ tip_for() {
     SPEED4) echo "Measure every product query; each ≤${BAR_QUERY_MS}ms. Put query names + ms in EVAL." ;;
     SPEED5) echo "Measure main-path JS gzip (named entry); ≤200 KiB or named exception + size. Put KiB in EVAL." ;;
     TEST1)  echo "Full suite exit 0, 3/3 consecutive greens, 0 unbudgeted flakes; list each user-facing flow + ≥1 test." ;;
-    SCORE1) echo "Lighthouse Performance median of 3 = 100 (or N/A if no web UI). skills/lighthouse/lighthouse-median.sh <url>." ;;
+    SCORE1) echo "Lighthouse Performance median of 3 = 100 (or N/A if no web UI). bin/lighthouse-median <url>." ;;
     SCORE2) echo "React Doctor = 100/100 on each prod React app (or N/A if no React). Fix findings — don't disable rules." ;;
     SCORE3) echo "Fix broken markdown links. Run: maguro links <path> (lists BROKEN targets)." ;;
     DOCS1)  echo "Fresh clone: README alone boots in 1 attempt; every documented command exits 0; undocumented steps = 0." ;;

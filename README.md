@@ -1,5 +1,7 @@
 # Hon Maguro
 
+[![skills.sh](https://skills.sh/b/stevederico/hon-maguro)](https://skills.sh/stevederico/hon-maguro)
+
 ![Golden tuna banner](./assets/banner.jpg)
 
 **true tuna standards for software**
@@ -9,15 +11,18 @@
 | **Standards** | Fixed bars → [STANDARDS.md](./STANDARDS.md) |
 | **Meet** | Agent tips (no gaming) → [MEET.md](./MEET.md) |
 | **Eval** | Score a project → [EVAL.md](./EVAL.md) · `maguro eval` |
-| **Skills** | [lighthouse](./skills/lighthouse/) · [fix-rounds](./skills/fix-rounds/) (≤2 fix cycles) |
+| **Skill** | One agent skill → [SKILL.md](./SKILL.md) · `npx skills add stevederico/hon-maguro` |
 
 Meet every standard → **Hon Maguro**. Miss any → **Fail**.
 
 ```bash
+npx skills add stevederico/hon-maguro
+
 ./bin/maguro init ~/path/to/project
 ./bin/maguro links ~/path/to/project   # SCORE3 — no extra install
 ./bin/maguro eval ~/path/to/project
-# agents: skills/fix-rounds — eval → fix real FAILs → re-eval (max 2 rounds)
+./bin/lighthouse-median https://localhost:3000   # SCORE1
+# agents: capped fix loop (≤2 rounds) is in SKILL.md
 ```
 
 ## Lessons from Japanese engineering
