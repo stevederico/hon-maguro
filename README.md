@@ -9,6 +9,7 @@
 | **Standards** | Fixed bars → [STANDARDS.md](./STANDARDS.md) |
 | **Meet** | Agent tips (no gaming) → [MEET.md](./MEET.md) |
 | **Eval** | Score a project → [EVAL.md](./EVAL.md) · `hm eval` |
+| **Skills** | [lighthouse](./skills/lighthouse/) · [fix-rounds](./skills/fix-rounds/) (≤2 fix cycles) |
 
 Meet every standard → **Hon Maguro**. Miss any → **Fail**.
 
@@ -16,6 +17,7 @@ Meet every standard → **Hon Maguro**. Miss any → **Fail**.
 ./bin/hm init ~/path/to/project
 ./bin/hm links ~/path/to/project   # SCORE3 — no extra install
 ./bin/hm eval ~/path/to/project
+# agents: skills/fix-rounds — eval → fix real FAILs → re-eval (max 2 rounds)
 ```
 
 ## Lessons from Japanese engineering

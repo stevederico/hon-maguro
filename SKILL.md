@@ -45,6 +45,10 @@ Typical flow:
 - `SCORE1` (Lighthouse Performance median of 3 = 100) has no runner inside `hm`. Use the **lighthouse** skill (`skills/lighthouse/`) to produce the number, then paste it into the `SCORE1` evidence cell.
 - `SCORE2` (React Doctor = 100) and the SPEED/TEST/OPS bars are measured by you with the project's own tooling; record the number as evidence.
 
+## Inspect → fix (capped)
+
+To improve a project toward the gate (not open-ended until green), use the **fix-rounds** skill (`skills/fix-rounds/`): baseline `hm eval` → fix real FAILs → re-eval, **max 2 fix rounds**. Stops on HUMAN / need measure; never games the meter.
+
 ## Rules (from MEET.md)
 
 - Measure the same path users take — no secret eval mode.
