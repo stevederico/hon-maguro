@@ -1,7 +1,5 @@
 # Hon Maguro
 
-[![skills.sh](https://skills.sh/b/stevederico/hon-maguro)](https://skills.sh/stevederico/hon-maguro)
-
 ![Golden tuna banner](./assets/banner.jpg)
 
 **true tuna standards for software**
