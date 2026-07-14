@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="0.13.0"
+VERSION="0.14.0"
 
 BAR_P99_MS=300
 BAR_QUERY_MS=100
@@ -70,6 +70,35 @@ row_has_evidence() {
 }
 
 row() { printf '  %-7s %-5s %s\n' "$1" "$2" "$3"; }
+
+# One-line "how to pass" per bar (printed only on FAIL).
+tip_for() {
+  case "$1" in
+    SPEED1) echo "Measure TTFB on every product URL (localhost, cache-warm); each ≤${BAR_TTFB_MS}ms. Put URL list + ms in EVAL." ;;
+    SPEED2) echo "Measure LCP on every product URL (Fast 3G, 4× CPU); each ≤2.0s. Put URL list + seconds in EVAL." ;;
+    SPEED3) echo "Measure p99 on every product API route; each ≤${BAR_P99_MS}ms. Put routes + p99 in EVAL." ;;
+    SPEED4) echo "Measure every product query; each ≤${BAR_QUERY_MS}ms. Put query names + ms in EVAL." ;;
+    SPEED5) echo "Measure main-path JS gzip (named entry); ≤200 KiB or named exception + size. Put KiB in EVAL." ;;
+    TEST1)  echo "Full suite exit 0, 3/3 consecutive greens, 0 unbudgeted flakes; list each user-facing flow + ≥1 test." ;;
+    SCORE1) echo "Lighthouse Performance median of 3 = 100 (or N/A if no web UI). skills/lighthouse/lighthouse-median.sh <url>." ;;
+    SCORE2) echo "React Doctor = 100/100 on each prod React app (or N/A if no React). Fix findings — don't disable rules." ;;
+    SCORE3) echo "Fix broken markdown links. Run: hm links <path> (lists BROKEN targets)." ;;
+    DOCS1)  echo "Fresh clone: README alone boots in 1 attempt; every documented command exits 0; undocumented steps = 0." ;;
+    CODE1)  echo "List ≥1 business entity; each maps 1:1 to a primary table/type. Put mapping table in EVAL." ;;
+    CODE2)  echo "auth entrypoints = 1; data-access style = 1; user-visible 5xx stack/provider leaks = 0. Put counts in EVAL." ;;
+    CODE3)  echo "Set \"strict\": true in tsconfig; replace any / as unknown as with unknown + narrowing (hits = 0)." ;;
+    REPO1)  echo "Untrack .env (git rm --cached); remove secret-shaped strings from the tree; rotate any real keys that leaked." ;;
+    REPO2)  echo "Prod+dev deps ≤${BAR_MAX_DEPS}, or justify each extra with one-line why in EVAL evidence." ;;
+    REPO3)  echo "Catch changelog up to user-visible releases (lag = 0), or mark pre-users if none shipped." ;;
+    OPS1)   echo "Record peak AND steady load — each a number + unit (e.g. 100 rps peak, 20 rps steady)." ;;
+    OPS2)   echo "Record data now AND monthly growth — each a number + unit (e.g. 2 GB now, +200 MB/mo)." ;;
+    OPS3)   echo "Exactly 1 sentence: primary dies → what happens (failover / degrade / hard down)." ;;
+    OPS4)   echo "Five \$/mo numbers: ceiling, CPU/mem, storage, egress, third-party. Blank line = fail." ;;
+    OPS5)   echo "List 1–6 assumptions (more → restart the plan). Put the count + short list in EVAL." ;;
+    OPS6)   echo "One clean-room restore success (date + scenario), or N/A if no durable user data." ;;
+    *)      echo "See STANDARDS.md for bar $1; evidence must be number/count/binary (MEET.md)." ;;
+  esac
+}
 
 cmd_init() {
   local dir="${1:-.}"
@@ -153,8 +182,16 @@ cmd_eval() {
   local dir="${1:-.}"
   dir="$(cd "$dir" && pwd)"
   local project cl fail=0 human=0 pass=0
+  local -a fail_ids=()
   project="$(basename "$dir")"
   cl="$(find_eval "$dir" || true)"
+
+  mark_fail() {
+    local id="$1" note="$2"
+    row "$id" FAIL "$note"
+    fail=$((fail + 1))
+    fail_ids+=("$id")
+  }
 
   echo "Hon Maguro eval v$VERSION"
   echo "project: $project"
@@ -168,28 +205,23 @@ cmd_eval() {
   local human_ids=(SPEED1 SPEED2 SPEED3 SPEED4 SPEED5 TEST1 SCORE1 SCORE2 DOCS1 CODE1 CODE2 REPO3 OPS1 OPS2 OPS3 OPS4 OPS5 OPS6)
   if [[ -z "$cl" ]]; then
     for id in "${human_ids[@]}"; do
-      row "$id" FAIL "no eval form"
-      fail=$((fail + 1))
+      mark_fail "$id" "no eval form — run: hm init $dir"
     done
   else
     for id in "${human_ids[@]}"; do
       if ! row_has_evidence "$dir/$cl" "$id"; then
-        row "$id" FAIL "no evidence"
-        fail=$((fail + 1))
+        mark_fail "$id" "no evidence — put number/count/binary in EVAL"
         continue
       fi
       local line ms
       line="$(grep -E "^\| ${id} " "$dir/$cl" | head -1)"
       ms="$(echo "$line" | grep -oE '[0-9]+[[:space:]]*ms' | head -1 | grep -oE '[0-9]+' || true)"
       if [[ "$id" == "SPEED3" && -n "$ms" && "$ms" -gt "$BAR_P99_MS" ]]; then
-        row SPEED3 FAIL "evidence ${ms}ms > ${BAR_P99_MS}ms"
-        fail=$((fail + 1))
+        mark_fail SPEED3 "evidence ${ms}ms > ${BAR_P99_MS}ms"
       elif [[ "$id" == "SPEED4" && -n "$ms" && "$ms" -gt "$BAR_QUERY_MS" ]]; then
-        row SPEED4 FAIL "evidence ${ms}ms > ${BAR_QUERY_MS}ms"
-        fail=$((fail + 1))
+        mark_fail SPEED4 "evidence ${ms}ms > ${BAR_QUERY_MS}ms"
       elif [[ "$id" == "SPEED1" && -n "$ms" && "$ms" -gt "$BAR_TTFB_MS" ]]; then
-        row SPEED1 FAIL "evidence ${ms}ms > ${BAR_TTFB_MS}ms"
-        fail=$((fail + 1))
+        mark_fail SPEED1 "evidence ${ms}ms > ${BAR_TTFB_MS}ms"
       elif [[ "$id" == "SPEED3" && -n "$ms" ]]; then
         row SPEED3 PASS "p99 ${ms}ms ≤ ${BAR_P99_MS}ms"
         pass=$((pass + 1))
@@ -214,8 +246,7 @@ cmd_eval() {
     row SCORE3 PASS "hm links broken=0"
     pass=$((pass + 1))
   else
-    row SCORE3 FAIL "hm links broken=$link_broken — run: hm links $dir"
-    fail=$((fail + 1))
+    mark_fail SCORE3 "hm links broken=$link_broken — run: hm links $dir"
   fi
 
   # CODE3 auto: strict + any
@@ -224,22 +255,19 @@ cmd_eval() {
   any_count="$(rg_count 'as any|: any\b|as unknown as' "$dir" --glob '*.ts' --glob '*.tsx')"
   if [[ -n "$tsconfig" ]] && grep -qE '"strict"\s*:\s*true' "$dir/$tsconfig" 2>/dev/null; then
     if [[ "$any_count" -gt 0 ]]; then
-      row CODE3 FAIL "strict on but ~$any_count any/cast hits"
-      fail=$((fail + 1))
+      mark_fail CODE3 "strict on but ~$any_count any/cast hits"
     else
       row CODE3 PASS "strict: true, no any hits"
       pass=$((pass + 1))
     fi
   elif [[ -n "$tsconfig" ]]; then
-    row CODE3 FAIL "strict not true"
-    fail=$((fail + 1))
+    mark_fail CODE3 "strict not true"
   else
     if [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" CODE3; then
       row CODE3 HUMAN "no tsconfig — evidence only"
       human=$((human + 1))
     else
-      row CODE3 FAIL "no tsconfig / no evidence"
-      fail=$((fail + 1))
+      mark_fail CODE3 "no tsconfig / no evidence"
     fi
   fi
 
@@ -251,11 +279,9 @@ cmd_eval() {
     git -C "$dir" ls-files | grep -qE '(^|/)\.env$' && env_tracked=1 || true
   fi
   if [[ "$env_tracked" -eq 1 ]]; then
-    row REPO1 FAIL ".env tracked"
-    fail=$((fail + 1))
+    mark_fail REPO1 ".env tracked"
   elif [[ "$secret_hits" -gt 0 ]]; then
-    row REPO1 FAIL "~$secret_hits secret-shaped hits"
-    fail=$((fail + 1))
+    mark_fail REPO1 "~$secret_hits secret-shaped hits"
   else
     row REPO1 PASS "no tracked .env / no obvious secrets"
     pass=$((pass + 1))
@@ -272,16 +298,14 @@ cmd_eval() {
       row REPO2 HUMAN "$dep_count deps — justify extras in evidence"
       human=$((human + 1))
     else
-      row REPO2 FAIL "$dep_count deps > $BAR_MAX_DEPS"
-      fail=$((fail + 1))
+      mark_fail REPO2 "$dep_count deps > $BAR_MAX_DEPS"
     fi
   else
     if [[ -n "$cl" ]] && row_has_evidence "$dir/$cl" REPO2; then
       row REPO2 HUMAN "no package.json — evidence only"
       human=$((human + 1))
     else
-      row REPO2 FAIL "no package.json / no evidence"
-      fail=$((fail + 1))
+      mark_fail REPO2 "no package.json / no evidence"
     fi
   fi
 
@@ -297,6 +321,30 @@ cmd_eval() {
   fi
   echo "result:  $verdict"
 
+  local tips_block=""
+  if [[ "$fail" -gt 0 ]]; then
+    echo ""
+    echo "how to pass:"
+    tips_block=$'\n## How to pass\n'
+    local fid
+    # unique fail ids, stable order
+    local -a seen=()
+    for fid in "${fail_ids[@]}"; do
+      local already=0 s
+      for s in "${seen[@]+"${seen[@]}"}"; do
+        [[ "$s" == "$fid" ]] && { already=1; break; }
+      done
+      [[ "$already" -eq 1 ]] && continue
+      seen+=("$fid")
+      local tip
+      tip="$(tip_for "$fid")"
+      printf '  %-7s %s\n' "$fid" "$tip"
+      tips_block+="- **${fid}:** ${tip}"$'\n'
+    done
+    echo ""
+    echo "fix product, not meter — MEET.md · full bars — STANDARDS.md"
+  fi
+
   {
     echo "# Hon Maguro eval — $project"
     echo ""
@@ -304,6 +352,9 @@ cmd_eval() {
     echo "- **Tool:** hm $VERSION"
     echo "- **Result:** $verdict"
     echo "- **PASS / FAIL / HUMAN:** $pass / $fail / $human"
+    if [[ -n "$tips_block" ]]; then
+      echo "$tips_block"
+    fi
   } >"$dir/HON-MAGURO-EVAL-REPORT.md"
   echo "wrote $dir/HON-MAGURO-EVAL-REPORT.md"
 }

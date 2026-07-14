@@ -38,6 +38,7 @@ Typical flow:
 - Per-row status: `PASS` / `FAIL` / `HUMAN`.
 - `summary  PASS=.. FAIL=.. HUMAN=..`
 - `result:` is `HON MAGURO` only when FAIL=0 **and** HUMAN=0. Any open HUMAN row or any FAIL = overall Fail.
+- On any FAIL, `hm` prints a **how to pass:** block (one tip per failed bar) and copies it into `HON-MAGURO-EVAL-REPORT.md`.
 - Resolve every `HUMAN` row by reading the evidence and checking it against the matching bar in `STANDARDS.md`, then report which bars truly pass.
 
 ## Bars that need external runners
