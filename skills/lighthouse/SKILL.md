@@ -42,7 +42,7 @@ skills/lighthouse/lighthouse-median.sh https://myapp.com 3
 
 ## Feeding it back into Hon Maguro
 
-Take the reported Performance median and paste it into the `SCORE1` evidence cell of `HON-MAGURO-EVAL.md`, e.g. `Lighthouse perf median=100 (3 runs) — https://myapp.com`, then re-run `bin/hm eval <path>`. Mark `SCORE1` **N/A** only if the project has no web UI.
+Take the reported Performance median and paste it into the `SCORE1` evidence cell of `HON-MAGURO-EVAL.md`, e.g. `Lighthouse perf median=100 (3 runs) — https://myapp.com`, then re-run `bin/maguro eval <path>`. Mark `SCORE1` **N/A** only if the project has no web UI.
 
 ## Rules (MEET.md)
 

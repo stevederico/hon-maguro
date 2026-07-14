@@ -23,7 +23,7 @@ for i in $(seq 1 "$RUNS"); do
 done
 
 # Median per category across runs; Performance drives pass/fail. python3 is
-# preinstalled (macOS/Linux) — same dep hm already relies on.
+# preinstalled (macOS/Linux) — same dep maguro already relies on.
 python3 - "$TMP" "$RUNS" <<'PY'
 import glob, json, statistics, sys
 tmp, runs = sys.argv[1], int(sys.argv[2])

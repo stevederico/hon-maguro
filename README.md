@@ -8,15 +8,15 @@
 |--|--|
 | **Standards** | Fixed bars → [STANDARDS.md](./STANDARDS.md) |
 | **Meet** | Agent tips (no gaming) → [MEET.md](./MEET.md) |
-| **Eval** | Score a project → [EVAL.md](./EVAL.md) · `hm eval` |
+| **Eval** | Score a project → [EVAL.md](./EVAL.md) · `maguro eval` |
 | **Skills** | [lighthouse](./skills/lighthouse/) · [fix-rounds](./skills/fix-rounds/) (≤2 fix cycles) |
 
 Meet every standard → **Hon Maguro**. Miss any → **Fail**.
 
 ```bash
-./bin/hm init ~/path/to/project
-./bin/hm links ~/path/to/project   # SCORE3 — no extra install
-./bin/hm eval ~/path/to/project
+./bin/maguro init ~/path/to/project
+./bin/maguro links ~/path/to/project   # SCORE3 — no extra install
+./bin/maguro eval ~/path/to/project
 # agents: skills/fix-rounds — eval → fix real FAILs → re-eval (max 2 rounds)
 ```
 

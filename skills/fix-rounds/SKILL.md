@@ -1,7 +1,7 @@
 ---
 name: fix-rounds
 description: >
-  Capped Hon Maguro inspect→fix→re-eval loop. Run hm eval, fix real product FAILs only, re-eval at most twice. Never open-ended until green; never game the meter. Use when the user says "fix until pass", "make it hon maguro", "inspect and fix", "quality fix loop", or wants an agent to improve a project against Maguro bars without infinite retry.
+  Capped Hon Maguro inspect→fix→re-eval loop. Run maguro eval, fix real product FAILs only, re-eval at most twice. Never open-ended until green; never game the meter. Use when the user says "fix until pass", "make it hon maguro", "inspect and fix", "quality fix loop", or wants an agent to improve a project against Maguro bars without infinite retry.
 ---
 
 # fix-rounds
@@ -13,25 +13,25 @@ Not open-ended. Infinite "until green" invites cheating the scoreboard.
 ## Invoke
 
 ```bash
-# From the hon-maguro repo (or any checkout that has bin/hm):
-bin/hm init  <path>    # if no HON-MAGURO-EVAL.md yet
-bin/hm eval  <path>    # round 0 — baseline
+# From the hon-maguro repo (or any checkout that has bin/maguro):
+bin/maguro init  <path>    # if no HON-MAGURO-EVAL.md yet
+bin/maguro eval  <path>    # round 0 — baseline
 # fix real FAILs in <path> (see Allowed fixes)
-bin/hm eval  <path>    # round 1
+bin/maguro eval  <path>    # round 1
 # optional second fix pass
-bin/hm eval  <path>    # round 2 — last
+bin/maguro eval  <path>    # round 2 — last
 ```
 
 Round budget: **1 baseline eval + ≤2 fix→re-eval cycles**. Do not start a 3rd fix cycle.
 
 ## Algorithm
 
-1. **Baseline** — `hm init` if missing; `hm eval <path>`. Record PASS / FAIL / HUMAN.
+1. **Baseline** — `maguro init` if missing; `maguro eval <path>`. Record PASS / FAIL / HUMAN.
 2. **If `result: HON MAGURO`** — stop. Report done.
 3. **Triage FAILs only** (skip HUMAN until you have real numbers):
    - Map each FAIL id to [STANDARDS.md](../../STANDARDS.md).
    - Apply **Allowed fixes** below. Prefer root cause over workarounds.
-4. **Re-eval** — `hm eval <path>`. Increment round.
+4. **Re-eval** — `maguro eval <path>`. Increment round.
 5. **Stop when any is true:**
    - `result: HON MAGURO`
    - Round budget spent (2 fix cycles done)
@@ -45,7 +45,7 @@ Round budget: **1 baseline eval + ≤2 fix→re-eval cycles**. Do not start a 3r
 | **CODE3** | Enable `"strict": true`; replace `any` / `as unknown as` with `unknown` + narrowing |
 | **REPO1** | Untrack `.env`; remove secret-shaped strings; rotate if they were real |
 | **REPO2** | Drop unused deps; or justify each dep past 20 in EVAL evidence (one line why) |
-| **SCORE3** | Fix broken markdown links (`hm links` lists them) |
+| **SCORE3** | Fix broken markdown links (`maguro links` lists them) |
 | **TEST1** | Fix real failures/flakes; add missing flow tests — never delete tests to go green |
 | **DOCS1** | Make README alone boot a stranger (commands that exit 0) |
 | **CODE1/2** | Align glossary↔schema; one auth path; stop leaking stacks to users |
@@ -67,13 +67,13 @@ Fill EVAL evidence with **number, count, or binary** only. Empty evidence = fail
 
 ## HUMAN rows
 
-`hm` leaves many bars as **HUMAN** when evidence is present. You must:
+`maguro` leaves many bars as **HUMAN** when evidence is present. You must:
 
 1. Confirm evidence against STANDARDS.md (number in range, scope listed).
 2. If evidence is missing or only prose — measure or mark what is needed; **do not invent**.
 3. SCORE1: run `skills/lighthouse/lighthouse-median.sh <url>` when a web UI exists; paste median into evidence.
 
-After confirmation, if every bar truly passes, report **HON MAGURO** even if the raw `hm` summary still says HUMAN open — state which rows you confirmed.
+After confirmation, if every bar truly passes, report **HON MAGURO** even if the raw `maguro` summary still says HUMAN open — state which rows you confirmed.
 
 ## Report (always)
 

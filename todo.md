@@ -2,9 +2,9 @@
 
 ## Later — production telemetry (runtime SLOs)
 
-These need live prod metrics (Datadog/Prometheus), not a static clone. Integrate if `hm` ever ingests a telemetry source.
+These need live prod metrics (Datadog/Prometheus), not a static clone. Integrate if `maguro` ever ingests a telemetry source.
 
-- [ ] Telemetry ingest: point `hm` at a metrics source (URL/export) so runtime bars can be scored
+- [ ] Telemetry ingest: point `maguro` at a metrics source (URL/export) so runtime bars can be scored
 - [ ] SPEED-RUNTIME: production p95 ≤ 350 ms + success ≥ 99.95% (Mercari SLO)
 - [ ] Escaped defects: ≤ 3.4 defects per 1M requests (Six Sigma) — or automotive ≤ 50 PPM at customer
 - [ ] Error budget: releases halt when the monthly budget is spent (Google SRE stop-the-line)
