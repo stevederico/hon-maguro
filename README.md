@@ -47,4 +47,5 @@ The standards borrow the discipline of Japan's best manufacturers — build qual
 
 Inspired by [sirupsen/napkin-math](https://github.com/sirupsen/napkin-math).
 
+**Author:** Steve Derico  
 MIT — [LICENSE](./LICENSE)
