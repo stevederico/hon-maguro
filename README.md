@@ -8,10 +8,12 @@
 
 | | |
 |--|--|
+| **skills.sh** | [Package](https://skills.sh/stevederico/hon-maguro) · [skill page](https://skills.sh/stevederico/hon-maguro/hon-maguro) |
+| **Install** | `npx skills add stevederico/hon-maguro` |
 | **Standards** | Fixed bars → [STANDARDS.md](./STANDARDS.md) |
 | **Meet** | Agent tips (no gaming) → [MEET.md](./MEET.md) |
 | **Eval** | Score a project → [EVAL.md](./EVAL.md) · `maguro eval` |
-| **Skill** | [skills/hon-maguro](./skills/hon-maguro/) · `npx skills add stevederico/hon-maguro` |
+| **Skill** | [skills/hon-maguro](./skills/hon-maguro/) |
 
 Meet every standard → **Hon Maguro**. Miss any → **Fail**.
 
