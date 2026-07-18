@@ -2,14 +2,38 @@
 name: hon-maguro
 author: stevederico
 description: >
-  Evaluate any project against fixed "Hon Maguro" quality bars via bin/maguro (init/links/eval), run Lighthouse median-of-3 for SCORE1, and optionally a capped fix loop (max 2 rounds). Binary pass/fail — no partial credit. Use when the user says "eval this project", "hon maguro", "quality bar check", "is this project ready", "audit code quality", "lighthouse", "pagespeed", "fix until pass", "inspect and fix", or wants a pass/fail quality verdict against fixed standards.
+  Evaluate any project against fixed "Hon Maguro" quality bars via bin/maguro
+  (init/links/eval), optional Lighthouse median for SCORE1, and a capped fix loop
+  (max 2 rounds). Binary pass/fail — no partial credit. Use when the user says
+  "hon maguro", "eval this project", "quality bar check", "is this project ready",
+  "audit code quality", or wants a pass/fail verdict against Hon Maguro standards.
+  Do not use for generic Lighthouse/PageSpeed-only or open-ended "inspect and fix"
+  requests unless they ask for Hon Maguro / these bars.
+allowed-tools: Bash(*hon-maguro/bin/maguro*), Bash(*hon-maguro/bin/lighthouse-median*), Bash(curl:*), Bash(python3:*), Bash(npx:*), Read, Write, Edit, Grep, Glob
+metadata:
+  version: "0.17.0"
 ---
 
 # hon-maguro
 
 Binary quality gate: a project either meets every fixed bar (**HON MAGURO**) or it **Fails**. No partial credit. Bars → `STANDARDS.md`. Anti-gaming → `MEET.md`.
 
-`bin/maguro` is a self-contained Bash CLI (curl + python3 only). Scripts live next to this skill when installed from the repo.
+`bin/maguro` is a self-contained Bash CLI (curl + python3 only). Scripts ship next to this skill.
+
+## Paths
+
+Skill root (after install): `~/.agents/skills/hon-maguro/`
+
+```bash
+SKILL="$HOME/.agents/skills/hon-maguro"
+"$SKILL/bin/maguro" eval  <path>
+"$SKILL/bin/maguro" init  <path>
+"$SKILL/bin/maguro" links <path>
+"$SKILL/bin/maguro" help
+"$SKILL/bin/lighthouse-median" <url> [runs]
+```
+
+From a clone of this repo: `./bin/maguro` (wrapper) or `./skills/hon-maguro/bin/maguro`.
 
 ## Invoke
 
