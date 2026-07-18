@@ -1,5 +1,7 @@
 # Hon Maguro
 
+[![skills.sh](https://skills.sh/b/stevederico/hon-maguro)](https://skills.sh/stevederico/hon-maguro)
+
 ![Golden tuna banner](./assets/banner.jpg)
 
 **true tuna standards for software**
@@ -9,7 +11,7 @@
 | **Standards** | Fixed bars → [STANDARDS.md](./STANDARDS.md) |
 | **Meet** | Agent tips (no gaming) → [MEET.md](./MEET.md) |
 | **Eval** | Score a project → [EVAL.md](./EVAL.md) · `maguro eval` |
-| **Skill** | One agent skill → [SKILL.md](./SKILL.md) · `npx skills add stevederico/hon-maguro` |
+| **Skill** | [skills/hon-maguro](./skills/hon-maguro/) · `npx skills add stevederico/hon-maguro` |
 
 Meet every standard → **Hon Maguro**. Miss any → **Fail**.
 
