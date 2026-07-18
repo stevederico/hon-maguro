@@ -1,5 +1,6 @@
 ---
 name: hon-maguro
+author: stevederico
 description: >
   Evaluate any project against fixed "Hon Maguro" quality bars via bin/maguro (init/links/eval), run Lighthouse median-of-3 for SCORE1, and optionally a capped fix loop (max 2 rounds). Binary pass/fail — no partial credit. Use when the user says "eval this project", "hon maguro", "quality bar check", "is this project ready", "audit code quality", "lighthouse", "pagespeed", "fix until pass", "inspect and fix", or wants a pass/fail quality verdict against fixed standards.
 ---
